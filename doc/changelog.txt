@@ -1,0 +1,82 @@
+2009-04-20
+	* New parameter "filter" in server.enableChat()
+
+2009-04-13
+	* When message sending is idle for 2 seconds, clients ping server to let
+	them know they are alive.  Server considers clients disconnected after
+	10 seconds with no message.  (Before this, server would not notice if
+	client was physically unplugged, because the socket was never closed.)
+
+2009-04-06
+	* communicator.startTimer()
+
+2009-04-03
+	* GroupData.groupClients_random()
+
+2009-02-24
+	* new parameters of ClientData that are set by
+	GameControl.askAllPlayers(): replyReceived and unansweredMessage
+
+	* When clients get disconnected: Disable Unpause button until all
+	clients have reconnected and are ready.  Also, show error dialog.
+
+2009-02-23
+	* fix history grid truncation
+
+2009-02-20
+	* ClientHistoryBook __init__ param: showMatch (default True) - whether
+	to include the match column or not
+
+2009-02-19
+	* ClientHistory.addRoundOutput() (affecting HistoryWriter and
+	GameControl as well)
+	* copy params to output dir using new saveParamsToFile() 
+
+2009-02-17
+	* added Save and Close button to param editor
+
+2009-02-16
+	* new experiment parameters: showUpPayment and rounding
+	* put match parameters in all history.csv rows
+
+2009-02-13
+	* Included Andrea Gavana's FloatSpin from
+	http://xoomer.virgilio.it/infinity77/main/FloatSpin.html
+	(shared/widgets)
+
+2009-02-04
+	* Store gametype parameter without 'Control at the end
+
+2009-02-03
+	* parameters.saveParamsToFile() and getParamsFromFile() (INI-format)
+
+2009-01-30
+	* GroupData.groupClients_simple()
+
+2009-01-20
+	* don't resize param editor when adding new match
+	* fixed: scrollbar didn't appear in custom param area after game type
+	was changed
+	* fixed default open and saveas dirs in param editor
+
+2009-01-12
+	* cleaned up directory structure, making client.py and server.py the
+	only top-level files, and separating the rest into client, server,
+	shared, etc. directories
+	* changed controller and GUI class import method to avoid "import *"
+	* before connecting to clients, check for valid controller class name in
+	parameters, so that exec and eval will be secure.
+
+2008-12-17
+	* more detailed client status (including custom) possible using
+	GameControl.askAllPlayers(messages, sentStatus, rcvdStatus)
+
+2008-11-26
+	* fwd chat messages only within group (unless no group, then everyone)
+
+2008-11-21
+	* write chat history to output file
+
+2008-11-13
+	* write group ID to survey output files
+	* run survey at end of game, not every round!

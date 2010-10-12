@@ -1,0 +1,53 @@
+* Use real Model-View-Controller pattern.
+
+- better synchronization - use ntp server on server, ntplib on client?
+	http://pypi.python.org/pypi/ntplib/0.1.9
+- Easier reinit.  A list of messages that should be processed by the client to
+  restore its state?
+  	- automatically set type to 'reinit'
+	- automatically include history
+	- automatically include match and round
+	- automatically include unansweredMessage
+- The status.csv file should also have a column for the sessionID.
+- change ClientStatusListCtrl to match new status.csv
+- Use Decimal
+- experiment-level custom parameters
+- avoid truncating multi-line column labels in history (workaround in
+  ClientHistoryBook:55)
+- better error handling in param editor saves
+- chatPanel: wx.RICH2 causes AppendText to scroll too far, but only in Windows.
+  REPORT BUG.  Also, lines can be bold without wx.RICH2 in GTK, but not Windows.
+- sideways mode for history
+- per-round parameter changes
+	- each match has a list: paramChanges, with one element per round.  Each
+	  element is a dictionary with paramName:value pairs representing new
+	  values for those parameters.
+	- interface: a scrolled panel with a heading for each round and an "add"
+	  button to add a parameter change for that round, remove buttons next
+	  to the added fields.  each field has a dropdown box to select the
+	  parameter to change, textfield to set the value.
+	* Probably remove the Match entirely, use only rounds.  The experiment
+	* has an initial set of parameter values, and then each round can
+	* potentially have a set of parameter changes.  Each round with a set of
+	* parameter changes gets a tab in the param editor.  Each set of param
+	* changes contains only the parameters you want to change.
+- figure out why in NetworkTester when a client reconnects, it sometimes gets
+  the previous message in reinitparams
+- replace HistoryWriter with OutputWriter and put all output writing
+  functionality in there.
+  	- start with: DynamicCSVWriter class:
+		- addRow(rowDictionary) - if all keys are known, simply appends
+		  the row, matching value positions to appropriate columns.  If
+		  new keys are found, re-write from scratch, creating backup
+		  file first.
+		- or maybe separate write() function
+		- some way for user to specify order of columns
+			- separate addRow() and addRowData(dict) functions would
+			  allow preserving order by calling addRowData for
+			  individual columns (multiple times for current row
+			  after addRow()
+- on new match: re-order history columns so they match the new order, rather
+  than just appending any new columns to end
+- Remove ability to load dict format paramfiles
+- validate everything passed to eval()
+- GroupData: functions for grouping clients in common ways

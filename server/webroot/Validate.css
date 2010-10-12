@@ -1,0 +1,15 @@
+input.valid {
+	/* background: #afa; */
+}
+
+input.invalid {
+	background: #faa;
+}
+
+textarea.invalid {
+	background: #faa;
+}
+
+select.invalid {
+	background: #faa;
+}

@@ -1,0 +1,19 @@
+Metadata-Version: 1.0
+Name: Cerealizer
+Version: 0.7
+Summary: A secure pickle-like module
+Home-page: http://home.gna.org/oomadness/en/cerealizer/index.html
+Author: Lamy Jean-Baptiste (Jiba)
+Author-email: jibalamy@free.fr
+License: Python licence
+Description: A secure pickle-like module.
+        It support basic types (int, string, unicode, tuple, list, dict, set,...),
+        old and new-style classes (you need to register the class for security), object cycles,
+        and it can be extended to support C-defined type.
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Python Software Foundation License
+Classifier: Programming Language :: Python
+Classifier: Topic :: Security
+Classifier: Topic :: Software Development :: Libraries :: Python Modules

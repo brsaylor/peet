@@ -19,10 +19,10 @@ import time
 import webbrowser
 import wx
 
-from client import clientnet
-from shared.ClientHistory import ClientHistory
-from shared.ClientHistoryBook import ClientHistoryBook
-from shared.constants import roundingOptions
+from peet.client import clientnet
+from peet.shared.ClientHistory import ClientHistory
+from peet.shared.ClientHistoryBook import ClientHistoryBook
+from peet.shared.constants import roundingOptions
 
 NetworkEvent, EVT_NETWORK = wx.lib.newevent.NewEvent()
 

@@ -20,10 +20,10 @@ import wx
 from wx.lib.scrolledpanel import ScrolledPanel
 from wx.lib import newevent
 
-from client import clientnet
+from peet.client import clientnet
 import GameGUI
-from shared.widgets import FloatSpin
-from client.widgets import BorderedPanel
+from peet.shared.widgets import FloatSpin
+from peet.client.widgets import BorderedPanel
 
 # Fonts and colors
 lightBlue = '#bfbfff' # GIMP: blue, then 25% saturation

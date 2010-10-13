@@ -18,7 +18,7 @@ import random
 import string
 import sys
 
-from server import servernet
+from peet.server import servernet
 import GameControl
 
 

@@ -43,8 +43,8 @@ import Queue
 import time
 #import pickle
 
-from shared import cerealizer
-from shared import network
+from peet.shared import cerealizer
+from peet.shared import network
 
 class Communicator:
 

@@ -20,7 +20,7 @@ import os
 import csv
 import re
 
-from shared.ClientHistory import ClientHistory
+from peet.shared.ClientHistory import ClientHistory
 
 class HistoryWriter:
 

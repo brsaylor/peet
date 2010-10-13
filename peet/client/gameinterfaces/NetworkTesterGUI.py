@@ -17,7 +17,7 @@
 import random
 import wx
 
-from client import clientnet
+from peet.client import clientnet
 import GameGUI
 
 class NetworkTesterGUI(GameGUI.GameGUI):

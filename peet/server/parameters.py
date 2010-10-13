@@ -25,8 +25,8 @@ import wx
 import  wx.lib.scrolledpanel as scrolled
 import gamecontrollers
 from gamecontrollers import *
-from shared.widgets import FloatSpin
-from shared.constants import roundingOptions
+from peet.shared.widgets import FloatSpin
+from peet.shared.constants import roundingOptions
 
 # Constants
 KEEP = 1 # Normally returned by ParamEditor.ShowModal() 

@@ -16,9 +16,9 @@
 
 import math
 
-from server import servernet
+from peet.server import servernet
 import GameControl
-from server import GroupData
+from peet.server import GroupData
 
 class TestControl(GameControl.GameControl):
 

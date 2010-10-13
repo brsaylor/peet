@@ -21,10 +21,10 @@ import re
 import sys
 import traceback
 
-from server import servernet
-from server.ClientData import ClientData
-from server.HistoryWriter import HistoryWriter
-from shared.constants import roundingOptions
+from peet.server import servernet
+from peet.server.ClientData import ClientData
+from peet.server.HistoryWriter import HistoryWriter
+from peet.shared.constants import roundingOptions
 
 class GameControl:
 

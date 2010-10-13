@@ -21,10 +21,10 @@ import copy
 import os
 import time
 
-from server import servernet
+from peet.server import servernet
 import GameControl
-from server import GroupData
-from shared import util
+from peet.server import GroupData
+from peet.shared import util
 
 class IslandControl(GameControl.GameControl):
 

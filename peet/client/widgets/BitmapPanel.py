@@ -20,7 +20,7 @@ class BitmapPanel(wx.Panel):
     """ A semi-replacement for wx.StaticBitmap, which crashes in wxGTK if you
     give it any children, and claims to be designed only for small images
     anyway. """
-    def __init__(self, parent, id=-1, bitmap=None):
+    def __init__(self, parent, id=wx.ID_ANY, bitmap=None):
         wx.Panel.__init__(self, parent, id)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.SetBitmap(bitmap)

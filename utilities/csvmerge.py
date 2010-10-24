@@ -29,15 +29,15 @@ class MainWindow(wx.Frame):
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.sizer)
 
-        self.openButton = wx.Button(self.panel,-1, 'Choose (more) files')
+        self.openButton = wx.Button(self.panel, wx.ID_ANY, 'Choose (more) files')
         self.sizer.Add(self.openButton)
-        self.clearButton = wx.Button(self.panel,-1, 'Clear file list')
+        self.clearButton = wx.Button(self.panel, wx.ID_ANY, 'Clear file list')
         self.sizer.Add(self.clearButton)
         self.fileListBox = wx.TextCtrl(self.panel, #size=(400,300),
             style=wx.TE_MULTILINE|wx.TE_RICH2)
         self.fileListBox.SetEditable(False)
         self.sizer.Add(self.fileListBox, 1, flag=wx.EXPAND)
-        self.mergeButton = wx.Button(self.panel,-1, 'Merge files')
+        self.mergeButton = wx.Button(self.panel, wx.ID_ANY, 'Merge files')
         self.sizer.Add(self.mergeButton)
 
         self.Bind(wx.EVT_BUTTON, self.onOpenClicked, self.openButton)
@@ -147,5 +147,5 @@ class MainWindow(wx.Frame):
         outfile.close()
 
 app = wx.PySimpleApp()
-frame = MainWindow(None, -1, "CSV Merge")
+frame = MainWindow(None, wx.ID_ANY, "CSV Merge")
 app.MainLoop()

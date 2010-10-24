@@ -216,11 +216,11 @@ class ParamEditor(wx.Dialog):
 
 
         # Buttons for file operations
-        newButton = wx.Button(self,-1,"New")
-        openButton = wx.Button(self,-1,"Open")
-        saveButton = wx.Button(self,-1,"Save")
-        saveAsButton = wx.Button(self,-1,"Save As...")
-        saveAndCloseButton = wx.Button(self,-1,"Save and Close")
+        newButton = wx.Button(self, wx.ID_ANY, "New")
+        openButton = wx.Button(self, wx.ID_ANY, "Open")
+        saveButton = wx.Button(self, wx.ID_ANY, "Save")
+        saveAsButton = wx.Button(self, wx.ID_ANY, "Save As...")
+        saveAndCloseButton = wx.Button(self, wx.ID_ANY, "Save and Close")
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(newButton)
         hbox.Add(openButton)
@@ -286,7 +286,7 @@ class ParamEditor(wx.Dialog):
         hbox.AddF(wx.StaticText(self, label="Survey File: "), sizerFlags)
         self.surveyFile = wx.TextCtrl(self, size=(300, -1))
         hbox.AddF(self.surveyFile, sizerFlags)
-        surveyFileButton = wx.Button(self,-1,"Choose")
+        surveyFileButton = wx.Button(self, wx.ID_ANY, "Choose")
         hbox.AddF(surveyFileButton, sizerFlags)
         self.Bind(wx.EVT_BUTTON, self.onSurveyFileClicked, surveyFileButton)
         leftBoxSizer.AddF(hbox, sizerFlags)

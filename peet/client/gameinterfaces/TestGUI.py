@@ -30,14 +30,16 @@ class TestGUI(GameGUI.GameGUI):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(sizer)
-        self.matchRoundLabel = wx.StaticText(self.panel, -1, "Match -, Round -")
+        self.matchRoundLabel = wx.StaticText(self.panel, wx.ID_STATIC,
+                                             "Match -, Round -")
         sizer.Add(self.matchRoundLabel)
         self.spinner = wx.SpinCtrl(self.panel, min=1, initial=1)
         sizer.Add(self.spinner)
-        self.sendButton = wx.Button(self.panel, -1, "Send")
+        self.sendButton = wx.Button(self.panel, wx.ID_ANY, "Send")
         self.sendButton.Enable(False)
         sizer.Add(self.sendButton)
-        self.payoffLabel = wx.StaticText(self.panel, -1,
+        self.payoffLabel = wx.StaticText(self.panel, wx.ID_STATIC
+                                         ,
                 "Match Payoff: $'0.00 ($0.00)")
         sizer.Add(self.payoffLabel)
 

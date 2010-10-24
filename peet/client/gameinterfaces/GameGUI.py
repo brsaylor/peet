@@ -87,7 +87,7 @@ class GameGUI(wx.Frame):
         self.chatEntry = wx.TextCtrl(self.chatPanel, size=(300,-1),
                 style=wx.TE_PROCESS_ENTER)
         hsizer.Add(self.chatEntry)
-        self.chatSendButton = wx.Button(self.chatPanel, -1, 'Send')
+        self.chatSendButton = wx.Button(self.chatPanel, wx.ID_ANY, 'Send')
         hsizer.Add(self.chatSendButton)
         vsizer.Add(hsizer)
         self.Bind(wx.EVT_BUTTON, self.onChatSendClicked, self.chatSendButton)
@@ -148,7 +148,7 @@ class GameGUI(wx.Frame):
         headingfont =  wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
         headingfont.SetPointSize(16)
 
-        heading = wx.StaticText(panel, -1, 'End of Experiment')
+        heading = wx.StaticText(panel, wx.ID_ANY, 'End of Experiment')
         heading.SetFont(headingfont)
         vsizer.Add(heading, flag=wx.ALIGN_CENTER|wx.ALL, border=12)
         roundingString = roundingOptions[mes['rounding']]
@@ -165,12 +165,12 @@ class GameGUI(wx.Frame):
                 'as we count your earnings.\n'\
                 '\n'\
                 'Thank you for participating.'
-        textlabel = wx.StaticText(panel, -1, text)
+        textlabel = wx.StaticText(panel, wx.ID_ANY, text)
         textlabel.SetFont(font)
         vsizer.Add(textlabel, flag=wx.ALIGN_CENTER|wx.ALL, border=12)
 
         if mes.get('survey', False):
-            button = wx.Button(panel, -1, 'Take Survey')
+            button = wx.Button(panel, wx.ID_ANY, 'Take Survey')
             vsizer.Add(button, flag=wx.ALIGN_CENTER|wx.ALL, border=12)
             self.Bind(wx.EVT_BUTTON, self.onSurveyClicked, button)
 

@@ -46,26 +46,27 @@ class LoginWindow(wx.Frame):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(sizer)
-        prompt = wx.StaticText(self.panel, -1, "Please enter your name:")
-        prompt.SetFont(wx.Font(18, wx.FONTFAMILY_ROMAN, wx.NORMAL, wx.NORMAL))
+        prompt = wx.StaticText(self.panel, wx.ID_STATIC, "Please enter your name:")
+        prompt.SetFont(wx.Font(18, wx.FONTFAMILY_ROMAN,
+                               wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         sizer.Add(prompt, 0, wx.ALIGN_CENTER)
         self.loginField = wx.TextCtrl(self.panel, size=(300,-1),\
                 style=wx.TE_PROCESS_ENTER)
         sizer.Add(self.loginField, 0, wx.ALIGN_CENTER)
-        self.note = wx.StaticText(self.panel, -1,
+        self.note = wx.StaticText(self.panel, wx.ID_STATIC,
                 "Note: You do not need to enter your name to reconnect.")
         notefont = self.note.GetFont()
         notefont.SetStyle(wx.FONTSTYLE_ITALIC)
         self.note.SetFont(notefont)
         sizer.Add(self.note, 0, wx.ALIGN_CENTER)
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.loginButton = wx.Button(self.panel, -1, "Log In")
+        self.loginButton = wx.Button(self.panel, wx.ID_ANY, "Log In")
         loginFont = self.loginButton.GetFont()
         loginFont.SetWeight(wx.FONTWEIGHT_BOLD)
         self.loginButton.SetFont(loginFont)
         self.loginButton.Enable(False)
         hsizer.Add(self.loginButton, 0, wx.ALIGN_CENTER)
-        self.reconnectButton = wx.Button(self.panel, -1, "Reconnect")
+        self.reconnectButton = wx.Button(self.panel, wx.ID_ANY, "Reconnect")
         hsizer.Add(self.reconnectButton, 0, wx.ALIGN_CENTER)
         sizer.Add(hsizer, 0, wx.ALIGN_CENTER)
 

@@ -70,15 +70,17 @@ class Frame(wx.Frame):
         borderSize = 6
 
         # Experiment parameters box
-        box = wx.StaticBox(self.panel, -1, "Parameters")
+        box = wx.StaticBox(self.panel, wx.ID_STATIC, "Parameters")
         box.SetFont(self.boxFont)
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
-        self.filenameText = wx.StaticText(self.panel, -1, "File: [No file]")
+        self.filenameText = wx.StaticText(self.panel, wx.ID_STATIC,
+                                          "File: [No file]")
         bsizer.Add(self.filenameText)
-        self.newButton = wx.Button(self.panel, -1, "New")
-        self.openButton = wx.Button(self.panel, -1, "Open")
-        self.editButton = wx.Button(self.panel, -1, "Edit")
-        self.outputDirButton = wx.Button(self.panel, -1, "Choose output folder")
+        self.newButton = wx.Button(self.panel, wx.ID_ANY, "New")
+        self.openButton = wx.Button(self.panel, wx.ID_ANY, "Open")
+        self.editButton = wx.Button(self.panel, wx.ID_ANY, "Edit")
+        self.outputDirButton = wx.Button(self.panel, wx.ID_ANY,
+                                         "Choose output folder")
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(self.newButton)
         hbox.Add(self.openButton)
@@ -86,8 +88,8 @@ class Frame(wx.Frame):
         hbox.AddSpacer(30)
         hbox.Add(self.outputDirButton)
         bsizer.Add(hbox)
-        self.outputDirText = wx.StaticText(self.panel, -1,\
-                "Output Folder: [None]")
+        self.outputDirText = wx.StaticText(self.panel, wx.ID_STATIC,
+                                           "Output Folder: [None]")
         bsizer.Add(self.outputDirText)
         mainSizer.Add(bsizer, 0, flag=wx.EXPAND|wx.ALL, border=borderSize)
         self.Bind(wx.EVT_BUTTON, self.onNewClicked, self.newButton)
@@ -96,7 +98,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.onOutputDirClicked, self.outputDirButton)
 
         # Experiment controls box
-        box = wx.StaticBox(self.panel, -1, "Controls")
+        box = wx.StaticBox(self.panel, wx.ID_STATIC, "Controls")
         box.SetFont(self.boxFont)
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         self.connectButton = wx.Button(self.panel, label="Connect to Clients")
@@ -107,8 +109,8 @@ class Frame(wx.Frame):
         self.startButton.Enable(False)
         #msgButton = wx.Button(self.panel, label="Send message")
         self.nextRoundButton = wx.Button(self.panel, label="Next Round")
-        self.pauseButton = wx.Button(self.panel, -1, "Pause")
-        #self.writeButton = wx.Button(self.panel, -1, "Write history")
+        self.pauseButton = wx.Button(self.panel, wx.ID_ANY, "Pause")
+        #self.writeButton = wx.Button(self.panel, wx.ID_ANY, "Write history")
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(self.connectButton)
         #hbox.Add(msgButton)
@@ -119,11 +121,11 @@ class Frame(wx.Frame):
         self.nextRoundButton.Enable(False)
         bsizer.Add(hbox)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        self.autoAdvanceRoundCheckBox = wx.CheckBox(self.panel, -1,
-                "Auto-advance rounds")
+        self.autoAdvanceRoundCheckBox = wx.CheckBox(self.panel, wx.ID_ANY,
+                                                    "Auto-advance rounds")
         hbox.Add(self.autoAdvanceRoundCheckBox)
-        self.autoAdvanceMatchCheckBox = wx.CheckBox(self.panel, -1,
-                "Auto-advance matches")
+        self.autoAdvanceMatchCheckBox = wx.CheckBox(self.panel, wx.ID_ANY,
+                                                    "Auto-advance matches")
         hbox.Add(self.autoAdvanceMatchCheckBox)
         bsizer.Add(hbox)
         mainSizer.Add(bsizer, 0, flag=wx.EXPAND|wx.ALL, border=borderSize)
@@ -135,17 +137,19 @@ class Frame(wx.Frame):
         #self.Bind(wx.EVT_BUTTON, self.onWriteClicked, self.writeButton)
 
         # Status box
-        box = wx.StaticBox(self.panel, -1, "Status")
+        box = wx.StaticBox(self.panel, wx.ID_STATIC, "Status")
         box.SetFont(self.boxFont)
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
-        self.matchRoundLabel = wx.StaticText(self.panel, -1, "Match -, Round -")
+        self.matchRoundLabel = wx.StaticText(self.panel, wx.ID_STATIC,
+                                            "Match -, Round -")
         bsizer.Add(self.matchRoundLabel)
-        self.listCtrl = ClientStatusListCtrl(self.panel, -1, style=wx.LC_REPORT)
+        self.listCtrl = ClientStatusListCtrl(self.panel, wx.ID_ANY,
+                                             style=wx.LC_REPORT)
         bsizer.Add(self.listCtrl, 1, wx.EXPAND)
         mainSizer.Add(bsizer, 1, flag=wx.EXPAND|wx.ALL, border=borderSize)
 
         # Message box
-        box = wx.StaticBox(self.panel, -1, "Messages")
+        box = wx.StaticBox(self.panel, wx.ID_STATIC, "Messages")
         box.SetFont(self.boxFont)
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         self.messageBox = wx.TextCtrl(self.panel, #size=(400,300),
@@ -685,9 +689,9 @@ class Frame(wx.Frame):
             return
         
         # FIXME: update this when client history changes
-        frame = wx.Frame(self, -1, 'History for %s (id %d)'\
-                % (self.clients[id].name, id),\
-                size=(400, 400))
+        frame = wx.Frame(self, wx.ID_ANY, 'History for %s (id %d)'\
+                         % (self.clients[id].name, id),\
+                         size=(400, 400))
         panel = wx.Panel(frame)
         sizer = wx.BoxSizer(wx.VERTICAL)
         histBook = ClientHistoryBook(panel, self.clients[id].history)

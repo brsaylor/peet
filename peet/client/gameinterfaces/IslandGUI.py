@@ -68,11 +68,11 @@ class IslandGUI(GameGUI.GameGUI):
         # topSizer holds the top line of information
         f = wx.SizerFlags(1)
         topSizer = wx.BoxSizer(wx.HORIZONTAL)
-        topSizer.AddF(wx.StaticText(self.panel, -1, self.name), f)
-        topSizer.AddF(wx.StaticText(self.panel, -1, 'ID: %d' % self.id), f)
-        self.yourColorLabel = wx.StaticText(self.panel, -1, '-')
+        topSizer.AddF(wx.StaticText(self.panel, wx.ID_STATIC, self.name), f)
+        topSizer.AddF(wx.StaticText(self.panel, wx.ID_STATIC, 'ID: %d' % self.id), f)
+        self.yourColorLabel = wx.StaticText(self.panel, wx.ID_STATIC, '-')
         topSizer.AddF(self.yourColorLabel, f)
-        self.matchRoundLabel = wx.StaticText(self.panel, -1, '-')
+        self.matchRoundLabel = wx.StaticText(self.panel, wx.ID_STATIC, '-')
         topSizer.AddF(self.matchRoundLabel, f)
         f = wx.SizerFlags(0)
         f.Align(wx.ALIGN_CENTER)
@@ -90,18 +90,18 @@ class IslandGUI(GameGUI.GameGUI):
         f.Border(wx.LEFT|wx.BOTTOM, padding)
         mktSizer = wx.BoxSizer(wx.VERTICAL)
         self.mktSizer = mktSizer # We need it later to re-Layout()
-        mktHeading = wx.StaticText(self.panel, -1, 'Market')
+        mktHeading = wx.StaticText(self.panel, wx.ID_STATIC, 'Market')
         mktHeading.SetFont(headingFont)
         mktSizer.AddF(mktHeading, f)
 
         # Market info, e.g. "You are selling blue." - separate labels for
         # different fonts.
         mktInfoSizer = wx.BoxSizer(wx.HORIZONTAL)
-        mktInfoSizer.Add(wx.StaticText(self.panel, -1, 'You are '))
-        self.mktRoleLabel = wx.StaticText(self.panel, -1, '- ')
+        mktInfoSizer.Add(wx.StaticText(self.panel, wx.ID_STATIC, 'You are '))
+        self.mktRoleLabel = wx.StaticText(self.panel, wx.ID_STATIC, '- ')
         self.mktRoleLabel.SetFont(boldFont)
         mktInfoSizer.Add(self.mktRoleLabel)
-        self.mktColorLabel = wx.StaticText(self.panel, -1, '-.')
+        self.mktColorLabel = wx.StaticText(self.panel, wx.ID_STATIC, '-.')
         self.mktColorLabel.SetFont(boldFont)
         mktInfoSizer.Add(self.mktColorLabel)
         mktSizer.AddF(mktInfoSizer, f)
@@ -116,7 +116,7 @@ class IslandGUI(GameGUI.GameGUI):
                 value = 0.1, digits = 2, increment = 0.1,
                 extrastyle = FloatSpin.FS_RIGHT)
         spinSizer.Add(self.spinner)
-        self.submitButton = wx.Button(self.panel, -1, 'Submit')
+        self.submitButton = wx.Button(self.panel, wx.ID_ANY, 'Submit')
         self.submitButton.Disable()
         self.Bind(wx.EVT_BUTTON, self.onSubmitClicked, self.submitButton)
         spinSizer.Add(self.submitButton, flag=wx.LEFT, border=padding)
@@ -130,13 +130,13 @@ class IslandGUI(GameGUI.GameGUI):
         f.Border(wx.LEFT|wx.RIGHT|wx.BOTTOM, padding)
         acctSizer = wx.BoxSizer(wx.VERTICAL)
         self.acctSizer = acctSizer
-        acctHeading = wx.StaticText(self.panel, -1, 'Account')
+        acctHeading = wx.StaticText(self.panel, wx.ID_STATIC, 'Account')
         acctHeading.SetFont(headingFont)
         acctSizer.AddF(acctHeading, f)
 
         # Extra space to push the rest down as far as mktInfoSizer on the left
         # does
-        t = wx.StaticText(self.panel, -1, 'You are selling') 
+        t = wx.StaticText(self.panel, wx.ID_STATIC, 'You are selling') 
         t.SetFont(boldFont)
         t.SetForegroundColour('white') # to hide it
         acctSizer.AddF(t, f)
@@ -156,7 +156,7 @@ class IslandGUI(GameGUI.GameGUI):
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.onTimer, self.timer)
         self.timeLeft = 0
-        self.timerLabel = wx.StaticText(self.panel, -1, ' ')
+        self.timerLabel = wx.StaticText(self.panel, wx.ID_STATIC, ' ')
         self.timerLabel.SetFont(headingFont)
         f.Expand()
         f.Proportion(0)
@@ -458,7 +458,7 @@ class MarketPanel(wx.Panel):
         gsizer = wx.GridSizer(1, 5, hgap = self.hgap)
         self.headerPanel.SetSizer(gsizer)
         for colHeader in ('Buyer', 'Bid', 'Accept', 'Ask', 'Seller'):
-            t = wx.StaticText(self.headerPanel, -1, colHeader)
+            t = wx.StaticText(self.headerPanel, wx.ID_STATIC, colHeader)
             t.SetFont(boldFont)
             gsizer.Add(t, flag=wx.ALIGN_CENTER)
         vsizer.Add(self.headerPanel)
@@ -572,7 +572,7 @@ class MarketPanel(wx.Panel):
             panel.SetBackgroundColour('black')
             sizer = wx.BoxSizer(wx.VERTICAL)
             panel.SetSizer(sizer)
-            t = wx.StaticText(panel, -1, 'Match %d, Round %d'
+            t = wx.StaticText(panel, wx.ID_STATIC, 'Match %d, Round %d'
                     % (m['match'] + 1, m['round'] + 1))
             t.SetFont(boldFont)
             t.SetForegroundColour('white')
@@ -583,7 +583,7 @@ class MarketPanel(wx.Panel):
             sizer = wx.BoxSizer(wx.VERTICAL)
             panel.SetSizer(sizer)
             text = 'Production Shock'
-            t = wx.StaticText(panel, -1, text)
+            t = wx.StaticText(panel, wx.ID_STATIC, text)
             t.SetFont(boldFont)
             sizer.Add(t, flag=wx.ALIGN_CENTER) # Center the text
 
@@ -595,7 +595,7 @@ class MarketPanel(wx.Panel):
             if m['color'] == self.playerColor:
                 text += ' (%d green, %d %s)' \
                         % (m['green'], m[m['color']], m['color'])
-            t = wx.StaticText(panel, -1, text)
+            t = wx.StaticText(panel, wx.ID_STATIC, text)
             t.SetFont(boldFont)
             t.SetForegroundColour('white')
             sizer.Add(t, flag=wx.ALIGN_CENTER) # Center the text
@@ -610,7 +610,7 @@ class MarketPanel(wx.Panel):
                 text += 'lost $%0.2f)' % abs(amount)
             else:
                 text += 'gained $%0.2f)' % amount
-            t = wx.StaticText(panel, -1, text)
+            t = wx.StaticText(panel, wx.ID_STATIC, text)
             t.SetFont(boldFont)
             sizer.Add(t, flag=wx.ALIGN_CENTER) # Center the text
 
@@ -618,33 +618,33 @@ class MarketPanel(wx.Panel):
             panel.SetBackgroundColour(self.lightColor)
             sizer = wx.GridSizer(1, 5)
             panel.SetSizer(sizer)
-            sizer.AddF(wx.StaticText(panel, -1, str(m['id'])), f)
-            sizer.AddF(wx.StaticText(panel, -1, str(m['amount'])), f)
-            sizer.AddF(wx.StaticText(panel, -1, ' '), f)
-            sizer.AddF(wx.StaticText(panel, -1, ' '), f)
-            sizer.AddF(wx.StaticText(panel, -1, ' '), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['id'])), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['amount'])), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
 
         elif m['subtype'] == 'ask':
             panel.SetBackgroundColour(self.lightColor)
             sizer = wx.GridSizer(1, 5)
             panel.SetSizer(sizer)
-            sizer.AddF(wx.StaticText(panel, -1, ' '), f)
-            sizer.AddF(wx.StaticText(panel, -1, ' '), f)
-            sizer.AddF(wx.StaticText(panel, -1, ' '), f)
-            sizer.AddF(wx.StaticText(panel, -1, str(m['amount'])), f)
-            sizer.AddF(wx.StaticText(panel, -1, str(m['id'])), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['amount'])), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['id'])), f)
 
         elif m['subtype'] == 'transaction':
             panel.SetBackgroundColour(self.lightColor)
             sizer = wx.GridSizer(1, 5)
             panel.SetSizer(sizer)
-            sizer.AddF(wx.StaticText(panel, -1, str(m['buyerID'])), f)
-            sizer.AddF(wx.StaticText(panel, -1, ' '), f)
-            t = wx.StaticText(panel, -1, str(m['amount']))
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['buyerID'])), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
+            t = wx.StaticText(panel, wx.ID_STATIC, str(m['amount']))
             t.SetFont(transactionFont)
             sizer.AddF(t, f)
-            sizer.AddF(wx.StaticText(panel, -1, ' '), f)
-            sizer.AddF(wx.StaticText(panel, -1, str(m['sellerID'])), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['sellerID'])), f)
 
         # In Windows but not GTK, when we expand the scrolledPanel by setting
         # its size to GetBestSize(), the "best size" allows these panels to
@@ -693,46 +693,46 @@ class AccountPanel(wx.Panel):
         self.SetSizer(sizer)
         self.sizer = sizer
 
-        t = wx.StaticText(self, -1, 'Dollars')
+        t = wx.StaticText(self, wx.ID_STATIC, 'Dollars')
         t.SetFont(boldFont)
         sizer.Add(t)
-        self.dollarsLabel = wx.StaticText(self, -1, '0.00')
+        self.dollarsLabel = wx.StaticText(self, wx.ID_STATIC, '0.00')
         sizer.Add(self.dollarsLabel, flag=wx.ALIGN_RIGHT)
 
-        t = wx.StaticText(self, -1, 'Blue')
+        t = wx.StaticText(self, wx.ID_STATIC, 'Blue')
         t.SetFont(boldFont)
         sizer.Add(t)
-        self.blueLabel = wx.StaticText(self, -1, '0')
+        self.blueLabel = wx.StaticText(self, wx.ID_STATIC, '0')
         sizer.Add(self.blueLabel, flag=wx.ALIGN_RIGHT)
 
-        t = wx.StaticText(self, -1, 'Red')
+        t = wx.StaticText(self, wx.ID_STATIC, 'Red')
         t.SetFont(boldFont)
         sizer.Add(t)
-        self.redLabel = wx.StaticText(self, -1, '0')
+        self.redLabel = wx.StaticText(self, wx.ID_STATIC, '0')
         sizer.Add(self.redLabel, flag=wx.ALIGN_RIGHT)
 
-        t = wx.StaticText(self, -1, 'Green')
+        t = wx.StaticText(self, wx.ID_STATIC, 'Green')
         t.SetFont(boldFont)
         sizer.Add(t)
-        self.greenLabel = wx.StaticText(self, -1, '0')
+        self.greenLabel = wx.StaticText(self, wx.ID_STATIC, '0')
         sizer.Add(self.greenLabel, flag=wx.ALIGN_RIGHT)
 
         sizer.AddSpacer((-1, padding))
         sizer.AddSpacer((-1, padding))
 
-        t = wx.StaticText(self, -1, 'Current Round Score')
+        t = wx.StaticText(self, wx.ID_STATIC, 'Current Round Score')
         t.SetFont(boldFont)
         sizer.Add(t)
-        self.roundScoreLabel = wx.StaticText(self, -1, '0')
+        self.roundScoreLabel = wx.StaticText(self, wx.ID_STATIC, '0')
         sizer.Add(self.roundScoreLabel, flag=wx.ALIGN_RIGHT)
 
         sizer.AddSpacer((-1, padding))
         sizer.AddSpacer((-1, padding))
 
-        t = wx.StaticText(self, -1, 'Total Match Score')
+        t = wx.StaticText(self, wx.ID_STATIC, 'Total Match Score')
         t.SetFont(boldFont)
         sizer.Add(t)
-        self.matchScoreLabel = wx.StaticText(self, -1, '0')
+        self.matchScoreLabel = wx.StaticText(self, wx.ID_STATIC, '0')
         sizer.Add(self.matchScoreLabel, flag=wx.ALIGN_RIGHT)
 
     def update(self, acct):
@@ -767,13 +767,13 @@ class MessageDialog(wx.Dialog):
         f.Align(wx.ALIGN_CENTER)
         f.Border(wx.ALL, padding)
         
-        t = wx.StaticText(panel, -1, text)
+        t = wx.StaticText(panel, wx.ID_STATIC, text)
         t.SetFont(font)
         t.Wrap(400)
         sizer.AddF(t, f)
 
         if showOKButton:
-            self.OKButton = wx.Button(panel, -1, 'OK')
+            self.OKButton = wx.Button(panel, wx.ID_ANY, 'OK')
             sizer.AddF(self.OKButton, f)
             self.Bind(wx.EVT_BUTTON, self.onOKClicked, self.OKButton)
 
@@ -815,23 +815,23 @@ class ProductionDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
         panel.SetSizer(sizer)
 
-        t = wx.StaticText(panel, -1, 'Production')
+        t = wx.StaticText(panel, wx.ID_STATIC, 'Production')
         t.SetFont(headingFont)
         sizer.AddF(t, f)
 
         gsizer = wx.FlexGridSizer(rows = 2, cols = 2, hgap = 8, vgap = 8)
-        self.colorLabel = wx.StaticText(panel, -1, '000')
+        self.colorLabel = wx.StaticText(panel, wx.ID_STATIC, '000')
         self.colorLabel.SetFont(boldFont)
         self.colorLabel.SetForegroundColour('white') # hide initially
         gsizer.Add(self.colorLabel, flag=wx.ALIGN_RIGHT)
-        t = wx.StaticText(panel, -1, color.capitalize())
+        t = wx.StaticText(panel, wx.ID_STATIC, color.capitalize())
         t.SetFont(boldFont)
         gsizer.Add(t, flag=wx.ALIGN_LEFT)
-        self.greenLabel = wx.StaticText(panel, -1, '000')
+        self.greenLabel = wx.StaticText(panel, wx.ID_STATIC, '000')
         self.greenLabel.SetFont(boldFont)
         self.greenLabel.SetForegroundColour('white') # hide initially
         gsizer.Add(self.greenLabel, flag=wx.ALIGN_RIGHT)
-        t = wx.StaticText(panel, -1, 'Green')
+        t = wx.StaticText(panel, wx.ID_STATIC, 'Green')
         t.SetFont(boldFont)
         gsizer.Add(t, flag=wx.ALIGN_LEFT)
         sizer.AddF(gsizer, f)
@@ -846,7 +846,7 @@ class ProductionDialog(wx.Dialog):
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.onTimer, self.timer)
         self.timer.Start(1000, oneShot=False)
-        self.timerLabel = wx.StaticText(panel, -1, str(self.timeLeft))
+        self.timerLabel = wx.StaticText(panel, wx.ID_STATIC, str(self.timeLeft))
         self.timerLabel.SetFont(headingFont)
         sizer.AddF(self.timerLabel, f)
 

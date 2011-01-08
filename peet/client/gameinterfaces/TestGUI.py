@@ -43,11 +43,6 @@ class TestGUI(GameGUI.GameGUI):
                 "Match Payoff: $'0.00 ($0.00)")
         sizer.Add(self.payoffLabel)
 
-        #sizer.Add(self.historyBook)
-        #self.historyBook.Show(True)
-        # FIXME: somehow, avoid updating the historyBook if it is not being used
-        # by the derived class.
-        
         self.messageBox = wx.TextCtrl(self.panel, #size=(400,300),
             style=wx.TE_MULTILINE|wx.TE_RICH2|wx.TE_READONLY)
         sizer.Add(self.messageBox, 1, wx.EXPAND)

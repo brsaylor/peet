@@ -20,8 +20,6 @@ import webbrowser
 import wx
 
 from peet.client import clientnet
-from peet.shared.ClientHistory import ClientHistory
-from peet.shared.ClientHistoryBook import ClientHistoryBook
 from peet.shared.constants import roundingOptions
 
 NetworkEvent, EVT_NETWORK = wx.lib.newevent.NewEvent()
@@ -48,11 +46,6 @@ class GameGUI(wx.Frame):
         self.communicator.postEvent = self.postNetworkEvent
         self.Bind(EVT_NETWORK, self.onNetworkEvent)
 
-        if self.initParams['type'] == 'reinit':
-            self.history = self.initParams.get('history', ClientHistory())
-        else:
-            self.history = ClientHistory()
-
         # We always need to put a panel in the frame (because without a panel,
         # the background will be dark gray in Windows).
         self.panel = wx.Panel(self)
@@ -64,12 +57,6 @@ class GameGUI(wx.Frame):
         #frameSizer.Add(self.panel, (0,0), flag=wx.EXPAND)
         # Actually, no, we don't: without a sizer, it seems that the panel will
         # resize to fit the frame.
-
-        self.historyBook = ClientHistoryBook(self.panel, self.history,\
-                showMatch=initParams.get('showMatch', True))
-        self.historyBook.Show(False)
-        # To use the historyBook, Add() it to a sizer in the derived class and
-        # call historyBook.Show(True)
 
         # Chat panel
         self.chatPanel = wx.Panel(self.panel)
@@ -106,12 +93,7 @@ class GameGUI(wx.Frame):
         anything necessary before passing the message on to the derived class by
         calling onMessageReceived(), which is the one to override. """
         mes = event.message
-        if mes['type'] == 'histStartMatch':
-            self.historyBook.startMatch(mes['headers'], mes['practice'],\
-                    mes['groupID'], mes['stacks'])
-        elif mes['type'] == 'histAddRound':
-            self.historyBook.addRound(mes['values'])
-        elif mes['type'] == 'chat':
+        if mes['type'] == 'chat':
             self.chatBox.AppendText(self.makeChatString(mes, mes['id']))
         elif mes['type'] == 'disconnect':
             self.Destroy()

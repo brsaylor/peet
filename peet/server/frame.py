@@ -32,8 +32,6 @@ from peet.server import servernet
 import peet.server.gamecontrollers
 from peet.server.ClientData import ClientData
 from peet.server.ClientStatusListCtrl import ClientStatusListCtrl
-from peet.shared.ClientHistory import ClientHistory
-from peet.shared.ClientHistoryBook import ClientHistoryBook
 from peet.server import survey
 
 # Custom wx events for network events (client connects, messages, etc.)
@@ -110,7 +108,6 @@ class Frame(wx.Frame):
         #msgButton = wx.Button(self.panel, label="Send message")
         self.nextRoundButton = wx.Button(self.panel, label="Next Round")
         self.pauseButton = wx.Button(self.panel, wx.ID_ANY, "Pause")
-        #self.writeButton = wx.Button(self.panel, wx.ID_ANY, "Write history")
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(self.connectButton)
         #hbox.Add(msgButton)
@@ -676,29 +673,6 @@ class Frame(wx.Frame):
         GameGUI what to do with the message. """
         for c in self.clients:
             self.communicator.send(c.connection, {'type': 'pause'})
-
-    def onWriteClicked(self, event):
-        self.histWriter.write()
-
-    def showClientHistory(self, id):
-        """ Called by ClientStatusListCtrl.onPopupHist() """
-
-        print 'showClientHistory(' + str(id) + ')'
-
-        if self.clients[id] == None:
-            return
-        
-        # FIXME: update this when client history changes
-        frame = wx.Frame(self, wx.ID_ANY, 'History for %s (id %d)'\
-                         % (self.clients[id].name, id),\
-                         size=(400, 400))
-        panel = wx.Panel(frame)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        histBook = ClientHistoryBook(panel, self.clients[id].history)
-        sizer.Add(histBook)
-        frame.Show(True)
-
-        print 'showClientHistory done'
 
     def updateClientStatus(self, client):
         """ The game controller can call this after a client's status changes to

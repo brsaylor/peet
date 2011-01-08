@@ -152,6 +152,7 @@ class IslandControl(GameControl.GameControl):
             g.mktHist = []
 
         ## Output files
+
         # Market history
         self.mktHistFilename = os.path.join(self.outputDir,
                 server.sessionID + '-market-history.csv')
@@ -160,6 +161,33 @@ class IslandControl(GameControl.GameControl):
         self.mktHistHeaders = ['Match', 'Round', 'Group', 'Market', 'Action',
                 'Buyer', 'Bid', 'Accept', 'Ask', 'Seller', 'Time']
         csvwriter.writerow(self.mktHistHeaders)
+        file.close()
+
+        # Round output
+        self.roundOutputFilename = os.path.join(self.outputDir,
+                server.sessionID + '-history.csv')
+        self.roundOutputHeaders = ['Match', 'Round', 'Group', 'Subject', 
+                'color',
+
+                # c.acct
+                'dollars', 'blue', 'red', 'green', 'matchScore', 'roundScore',
+
+                # c.events
+                'productionChoice_blue',
+                'productionChoice_red',
+                'productionChoice_green',
+                'prodShock',
+                'moneyShock_blueMkt',
+                'moneyShockAmount_blueMkt',
+                'moneyShockAmountRealized_blueMkt',
+                'moneyShock_redMkt',
+                'moneyShockAmountRealized_redMkt']
+        file = open(self.roundOutputFilename, 'wb')
+        csvwriter = csv.DictWriter(file, self.roundOutputHeaders)
+        rowdict = {}
+        for header in self.roundOutputHeaders:
+            rowdict[header] = header
+        csvwriter.writerow(rowdict)
         file.close()
 
         # market events are given timestamps along a timeline that starts with
@@ -323,13 +351,16 @@ class IslandControl(GameControl.GameControl):
                     csvwriter.writerow(row)
         file.close()
         #
-        # Account and events to main output file
+        # Account and events to round output file
+        file = open(self.roundOutputFilename, 'ab')
+        csvwriter = csv.DictWriter(file, self.roundOutputHeaders)
         for c in self.clients:
-            self.roundOutput[c.id] = {'color': c.color}
-            self.roundOutput[c.id].update(c.acct)
-            self.roundOutput[c.id].update(
-                    c.events[self.matchNum][self.roundNum])
-
+            row = {'Match': self.matchNum, 'Round': self.roundNum,
+                    'Group': c.group.id, 'Subject': c.id, 'color': c.color}
+            row.update(c.acct)
+            row.update(c.events[self.matchNum][self.roundNum])
+            csvwriter.writerow(row)
+        file.close()
 
     def doProductionChoice(self, color):
         # Send the message out to everyone;
@@ -600,7 +631,6 @@ class IslandControl(GameControl.GameControl):
     def getReinitParams(self, client):
         m = self.initParams[client.id]
         m['type'] = 'reinit'
-        m['history'] = client.history
         m['match'] = self.matchNum
         m['round'] = self.roundNum
         m['matchInitMessage'] = client.matchInitMessage

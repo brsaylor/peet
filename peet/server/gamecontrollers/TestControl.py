@@ -49,18 +49,6 @@ class TestControl(GameControl.GameControl):
         self.server.enableChat()
 
     def initMatch(self):
-        if self.matchNum == 0:
-            self.histHeaders = ['xOne', 'xTwo']
-        elif self.matchNum == 1:
-            self.histHeaders = ['xOne', 'xTwo', 'xThree']
-        elif self.matchNum == 2:
-            self.histHeaders = ['xOne', 'xThree']
-        elif self.matchNum == 3:
-            self.histHeaders = ['xThree', 'xOne']
-        elif self.matchNum == 4:
-            self.histHeaders = ['xOne', 'xThree', 'xTwo']
-        elif self.matchNum == 5:
-            self.histHeaders = ['xTwo', 'xThree']
 
         numGroups = int(self.currentMatch['customParams']['numGroups'])
         groupSize = int(math.ceil(float(len(self.clients)) / float(numGroups)))
@@ -82,20 +70,7 @@ class TestControl(GameControl.GameControl):
 
         replies = self.askAllPlayers(messages)
 
-        # Add payoffs and history rows
+        # Add payoffs
         for i, reply in enumerate(replies):
             self.clients[i].payoffs[self.matchNum] += reply['amount']
             #strAmount = '%0.2f' % reply['amount']
-            a = reply['amount']
-            if self.matchNum == 0:
-                self.histValues[i] = [a, a*2]
-            elif self.matchNum == 1:
-                self.histValues[i] = [a, a*2, a*3]
-            elif self.matchNum == 2:
-                self.histValues[i] = [a, a*3]
-            elif self.matchNum == 3:
-                self.histValues[i] = [a*3, a]
-            elif self.matchNum == 4:
-                self.histValues[i] = [a, a*3, a*2]
-            elif self.matchNum == 5:
-                self.histValues[i] = [a*2, a*3]

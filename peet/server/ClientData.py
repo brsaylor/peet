@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from peet.shared.ClientHistory import ClientHistory
 from peet.shared.util import stepround
 
 class ClientData:
@@ -25,7 +24,6 @@ class ClientData:
         self.name = name
         self.status = status
         self.payoffs = payoffs  # list of payoffs for each match
-        self.history = ClientHistory()
         self.connection = connection
         self.exchangeRates = exchangeRates
         self.group = None

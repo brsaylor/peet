@@ -255,24 +255,11 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
 
         if self.idClicked != -1:
 
-            # Create IDs for each of the popup menu entries and bind them to the
-            # appropriate callback methods.
-            # Only do this part the first time so the events are only bound once
-            if not hasattr(self, 'popupID_hist'):
-                self.popupID_hist = wx.NewId()
-                self.Bind(wx.EVT_MENU, self.onPopupHist, id=self.popupID_hist)
-
             menu = wx.Menu()
-            menu.Append(self.popupID_hist, 'View History')
             # Popup the menu.  If an item is selected then its handler
             # will be called before PopupMenu returns.
             self.PopupMenu(menu)
             menu.Destroy()
-
-    def onPopupHist(self, event):
-        # FIXME
-        print "Sorry, viewing client history doesn't work right now"
-        #self.GetParent().showClientHistory(self.idClicked)
 
     # FIXME: I don't think this is used anymore
     def sortFunc(self, item1, item2):

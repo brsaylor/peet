@@ -23,7 +23,6 @@ import traceback
 
 from peet.server import servernet
 from peet.server.ClientData import ClientData
-from peet.server.HistoryWriter import HistoryWriter
 from peet.shared.constants import roundingOptions
 
 class GameControl:
@@ -53,10 +52,8 @@ class GameControl:
 
         # Create initParams, a list of dictionaries containing initialization
         # parameters to be sent to the client.  The derived class may add
-        # information to these dictionaries in its __init__ method.  Some
+        # information to these dictionaries in its __init__ method.
         # parameters that may be set that are automatically recognized by the
-        # client are:
-        #   showMatch (default:True) - Show match column in ClientHistoryBook
         # initParams will be sent by GameControl.start().
         #
         self.initParams = []
@@ -64,15 +61,6 @@ class GameControl:
         for client in clients:
             self.initParams.append(dict(type='init', GUIclass=GUIclassName,
                 id=client.id, name=client.name))
-
-        # Create the client history output file writer
-        clientHistories = []
-        for client in self.clients:
-            clientHistories.append(client.history)
-        self.histWriter = HistoryWriter(server.sessionID,\
-            params.get('experimentID', ''), clientHistories, self.outputDir,\
-            self.params)
-        self.histStacks = None # see ClientHistory.py (stacks attribute)
 
     def askAllPlayers(self, messages,\
             sentStatus='Waiting for client reply',
@@ -190,19 +178,8 @@ class GameControl:
         for m, match in enumerate(self.params['matches']):
             self.matchNum = m
             self.currentMatch = match
-            self.histHeaders = []
             self.initMatch()
             for client in self.clients:
-                self.communicator.send(client.connection,\
-                        dict(type='histStartMatch',\
-                        headers=self.histHeaders,\
-                        practice=self.currentMatch['practice'],\
-                        groupID=(client.group.id if client.group else None),\
-                        stacks=self.histStacks))
-                client.history.startMatch(self.histHeaders,\
-                        self.currentMatch['practice'],\
-                        groupID=(client.group.id if client.group else None),\
-                        stacks=self.histStacks)
                 client.payoffs.append(0)
                 # Note: the controller adds the payoffs in runRound()
             for r in range(match['numRounds']):
@@ -210,9 +187,6 @@ class GameControl:
                 self.server.updateMatchRound(self.matchNum, self.roundNum)
                 self.tellAllPlayers({'type': 'matchAndRound', 'match':
                     self.matchNum, 'round': self.roundNum})
-
-                self.histValues = [[]] * len(self.clients)
-                self.roundOutput = [{}] * len(self.clients)
 
                 self.runRound()
 
@@ -223,12 +197,6 @@ class GameControl:
                             'realCurrency': self.currentMatch['exchangeRate'] *
                             client.payoffs[self.matchNum]}
                     self.communicator.send(client.connection, mes)
-                    self.clients[i].history.addRound(self.histValues[i])
-                    self.clients[i].history.addRoundOutput(self.roundOutput[i])
-                    mes = {'type': 'histAddRound',\
-                            'values': self.histValues[i]}
-                    self.communicator.send(client.connection, mes)
-                self.histWriter.write()
 
                 # Anything the derived class wants to do post-round
                 self.postRound()
@@ -264,24 +232,19 @@ class GameControl:
     def initMatch(self):
         """ Called at the beginning of each match (before runRound()).  Override
         this method to perform any match initialization procedures, which may
-        include preparing match parameters and sending them to the clients.  At
-        the least, it must set the variable self.histHeaders, a list of strings
-        for the match history headers, as well as self.histStacks (if desired -
-            None by default)."""
+        include preparing match parameters and sending them to the clients. """
         pass
 
     def runRound(self):
         """ Called at the beginning of each round to do anything that happens
         during a round.  Override this method to process each round.  This
-        method set the variable self.histValues, a list of lists of client
-        history values (one value list for each client).  This method is also
-        expected to add client payoffs. """
+        method is expected to add client payoffs. """
         pass
     
     def postRound(self):
-        """ Called after runRound() has finished and client history and payoffs
-        have been updated.  For example, wait for clients to say they are ready
-        for the next round."""
+        """ Called after runRound() has finished and any output data has been
+        written and payoffs have been updated.  For example, wait for clients to
+        say they are ready for the next round."""
         pass
 
     def nextRound(self):
@@ -303,11 +266,9 @@ class GameControl:
     def getReinitParams(self, client):
         """ Override this function """
 
-        # Send the initParams again, but change type to 'reinit', and include
-        # the client's history.
+        # Send the initParams again, but change type to 'reinit'
         reinitParams = self.initParams[client.id]
         reinitParams['type'] = 'reinit'
-        reinitParams['history'] = client.history
         reinitParams['match'] = self.matchNum
         reinitParams['round'] = self.roundNum
 

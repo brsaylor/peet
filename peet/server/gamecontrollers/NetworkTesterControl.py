@@ -46,7 +46,7 @@ class NetworkTesterControl(GameControl.GameControl):
         self.mesID = 0
 
     def initMatch(self):
-        self.histHeaders = ['a']
+        pass
 
     def runRound(self):
 

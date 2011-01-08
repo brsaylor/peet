@@ -54,8 +54,6 @@ import cerealizer
 
 # Register with Cerealizer the classes we need to be able to send over the
 # network
-import ClientHistory
-cerealizer.register(ClientHistory.ClientHistory)
 import decimal
 cerealizer.register(decimal.Decimal)
 

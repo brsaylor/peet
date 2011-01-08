@@ -188,8 +188,6 @@ class IslandGUI(GameGUI.GameGUI):
 
     def doReinit(self, rp):
 
-        # History should already be set.
-
         self.onMessageReceived({'type': 'matchAndRound',
             'match': rp['match'],
             'round': rp['round'],

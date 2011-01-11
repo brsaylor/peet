@@ -196,7 +196,9 @@ class IslandControl(GameControl.GameControl):
         # every auction.
         self.baseTime = 0.0
 
-    def initMatch(self):
+        self.matchNum = 0
+
+    def initClients(self):
 
         # Get match parameters
         cp = self.currentMatch['customParams']
@@ -333,7 +335,7 @@ class IslandControl(GameControl.GameControl):
 
         # Add payoffs
         for i, c in enumerate(self.clients):
-            c.payoffs[self.matchNum] = c.acct['matchScore']
+            c.earnings += c.acct['matchScore']
 
         # Append round data to output files
         #

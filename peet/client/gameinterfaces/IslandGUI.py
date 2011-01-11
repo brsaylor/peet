@@ -69,7 +69,8 @@ class IslandGUI(GameGUI.GameGUI):
         f = wx.SizerFlags(1)
         topSizer = wx.BoxSizer(wx.HORIZONTAL)
         topSizer.AddF(wx.StaticText(self.panel, wx.ID_STATIC, self.name), f)
-        topSizer.AddF(wx.StaticText(self.panel, wx.ID_STATIC, 'ID: %d' % self.id), f)
+        topSizer.AddF(wx.StaticText(self.panel, wx.ID_STATIC,\
+               'ID: %d' % self.id), f)
         self.yourColorLabel = wx.StaticText(self.panel, wx.ID_STATIC, '-')
         topSizer.AddF(self.yourColorLabel, f)
         self.matchRoundLabel = wx.StaticText(self.panel, wx.ID_STATIC, '-')
@@ -267,10 +268,10 @@ class IslandGUI(GameGUI.GameGUI):
         return s
 
     def onMessageReceived(self, m):
-        if m['type'] == 'matchAndRound':
+        if m['type'] == 'round': # FIXME
             self.closeMessageDialogs()
             self.matchRoundLabel.SetLabel('Match %d, Round %d' %
-                    (m['match'] + 1, m['round'] + 1))
+                    (1, m['round'] + 1))
             self.outerSizer.Layout()
             if not m.has_key('doNotPrintEvent'):
                 self.mktPanel.addEvent(m)

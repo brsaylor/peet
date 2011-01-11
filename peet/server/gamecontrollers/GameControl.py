@@ -44,7 +44,6 @@ class GameControl:
         self.communicator = communicator
         self.clients = clients
         self.outputDir = outputDir
-        self.matchNum = 0
         self.roundNum = 0
         self.waitQ = Queue.Queue()  # for waiting after each round
         self.readyQ = Queue.Queue()  # for client ready messages
@@ -61,6 +60,9 @@ class GameControl:
         for client in clients:
             self.initParams.append(dict(type='init', GUIclass=GUIclassName,
                 id=client.id, name=client.name))
+
+        # FIXME: remove when new param system is done
+        self.currentMatch = self.params['matches'][0]
 
     def askAllPlayers(self, messages,\
             sentStatus='Waiting for client reply',
@@ -174,65 +176,52 @@ class GameControl:
         # All clients should be ready now.
 
         self.running = True
+        
+        self.initClients()
 
-        for m, match in enumerate(self.params['matches']):
-            self.matchNum = m
-            self.currentMatch = match
-            self.initMatch()
-            for client in self.clients:
-                client.payoffs.append(0)
-                # Note: the controller adds the payoffs in runRound()
-            for r in range(match['numRounds']):
-                self.roundNum = r
-                self.server.updateMatchRound(self.matchNum, self.roundNum)
-                self.tellAllPlayers({'type': 'matchAndRound', 'match':
-                    self.matchNum, 'round': self.roundNum})
+        for r in range(self.currentMatch['numRounds']):
+            self.roundNum = r
+            self.server.updateRound(self.roundNum)
+            self.tellAllPlayers({'type': 'round', 'round': self.roundNum})
 
-                self.runRound()
+            self.runRound()
 
-                # post-round client updates/communication
-                for i, client in enumerate(self.clients):
-                    mes = {'type': 'payoff',
-                            'experimentCurrency': client.payoffs[self.matchNum],
-                            'realCurrency': self.currentMatch['exchangeRate'] *
-                            client.payoffs[self.matchNum]}
-                    self.communicator.send(client.connection, mes)
+            # post-round client updates/communication
+            for i, client in enumerate(self.clients):
+                mes = {'type': 'earnings', 'earnings': client.earnings}
+                self.communicator.send(client.connection, mes)
 
-                # Anything the derived class wants to do post-round
-                self.postRound()
+            # Anything the derived class wants to do post-round
+            self.postRound()
 
-                # Tell the server the round is finished, and possibly the match,
-                # and possibly the game.
-                matchFinished = (r+1 == match['numRounds'])
-                gameFinished = matchFinished and\
-                    (m+1 == len(self.params['matches']))
-                self.server.roundFinished(matchFinished, gameFinished)
+            # Tell the server the round is finished,
+            # and possibly the game.
+            gameFinished = (self.roundNum == (self.currentMatch['numRounds']-1))
+            self.server.roundFinished(gameFinished)
 
-                if not gameFinished:
-                    # wait for server to give the OK to cont (i.e. call
-                    # nextRound())
-                    self.waitQ.get()
+            if not gameFinished:
+                # wait for server to give the OK to cont (i.e. call
+                # nextRound())
+                self.waitQ.get()
 
-        self.server.postMessage('All matches finished.')
+        self.server.postMessage('All rounds finished.')
 
         # Send end-of-experiment message
         for client in self.clients:
             mes = {'type': 'endOfExperiment',\
-                    'totalPayoff': client.getTotalPayoff(),\
-                    'exchangeRates': client.exchangeRates,\
+                    'earnings': client.earnings,\
                     'showUpPayment': self.params['showUpPayment'],\
                     'rounding': self.params['rounding'],\
-                    'totalDollarPayoff': client.getTotalDollarPayoff(\
-                        rounding = self.params['rounding'])\
-                        + self.params['showUpPayment']}
+                    'totalPayment': client.earnings } # FIXME
             if self.params.get('surveyFile', '') != '':
                 mes['survey'] = True
             self.communicator.send(client.connection, mes)
 
-    def initMatch(self):
-        """ Called at the beginning of each match (before runRound()).  Override
-        this method to perform any match initialization procedures, which may
-        include preparing match parameters and sending them to the clients. """
+    def initClients(self):
+        """ Called after all clients are ready and before runRound() is
+        called for the first time.  If there are any initialization messages
+        that need to be sent to the clients at the beginning of the game,
+        override this function and send them here. """
         pass
 
     def runRound(self):
@@ -269,7 +258,6 @@ class GameControl:
         # Send the initParams again, but change type to 'reinit'
         reinitParams = self.initParams[client.id]
         reinitParams['type'] = 'reinit'
-        reinitParams['match'] = self.matchNum
         reinitParams['round'] = self.roundNum
 
         return reinitParams

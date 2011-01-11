@@ -48,8 +48,6 @@ class TestControl(GameControl.GameControl):
 
         self.server.enableChat()
 
-    def initMatch(self):
-
         numGroups = int(self.currentMatch['customParams']['numGroups'])
         groupSize = int(math.ceil(float(len(self.clients)) / float(numGroups)))
         self.groups = GroupData.makeGroups(numGroups)
@@ -72,5 +70,4 @@ class TestControl(GameControl.GameControl):
 
         # Add payoffs
         for i, reply in enumerate(replies):
-            self.clients[i].payoffs[self.matchNum] += reply['amount']
-            #strAmount = '%0.2f' % reply['amount']
+            self.clients[i].earnings += reply['amount']

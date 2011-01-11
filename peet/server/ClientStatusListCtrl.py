@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+from decimal import Decimal
 import wx
 from wx.lib.mixins.listctrl import ColumnSorterMixin
 
@@ -32,16 +33,8 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
         # integers 0 to n.
         self.itemDataMap = {}
 
-        self.numCols = 7  # number of columns
+        self.numCols = 8  # number of columns
     
-        # Easy way to create columns, but doesn't allow images
-        #self.InsertColumn(0, 'ID')
-        #self.InsertColumn(1, 'IP Address')
-        #self.InsertColumn(2, 'Name')
-        #self.InsertColumn(3, 'Status')
-        #self.InsertColumn(4, 'Match Payoff')
-        #self.InsertColumn(5, 'Total Payoff')
-
         # Hard way to create columns, because we need images (sort arrows)
         info = wx.ListItem()
         info.m_mask = wx.LIST_MASK_TEXT | wx.LIST_MASK_IMAGE \
@@ -57,12 +50,14 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
         info.m_text = 'Status'
         self.InsertColumnInfo(3, info)
         info.m_format = wx.LIST_FORMAT_RIGHT
-        info.m_text = 'Match Payoff'
+        info.m_text = 'Game Earnings ($)'
         self.InsertColumnInfo(4, info)
-        info.m_text = 'Total Payoff'
+        info.m_text = 'Rounded Earnings ($)'
         self.InsertColumnInfo(5, info)
-        info.m_text = 'Total Payoff ($)'
+        info.m_text = 'Show-up Payment ($)'
         self.InsertColumnInfo(6, info)
+        info.m_text = 'Total Earnings ($)'
+        self.InsertColumnInfo(7, info)
 
         # This is the widest each column has ever been after an automatic
         # resize.  They will never be auto-resized smaller than this.
@@ -120,21 +115,20 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
 
     def makeRows(self, count):
 
-
         # populate the itemDataMap for ColumnSorterMixin
         for id in range(count):
             self.itemDataMap[id] =\
-                   [id, '', '', 'Waiting for connection', 0.0, 0.0, 0.0]
+                   [id, '', '', 'Waiting for connection',
+                           Decimal('0.00'),
+                           Decimal('0.00'),
+                           Decimal('0.00'),
+                           Decimal('0.00')]
 
         items = self.itemDataMap.items()
         for key, data in items:
             index = self.InsertStringItem(sys.maxint, str(data[0]))
-            self.SetStringItem(index, 1, data[1])
-            self.SetStringItem(index, 2, data[2])
-            self.SetStringItem(index, 3, data[3])
-            self.SetStringItem(index, 4, '%0.2f' % data[4])
-            self.SetStringItem(index, 5, '%0.2f' % data[5])
-            self.SetStringItem(index, 6, '%0.2f' % data[6])
+            for col in range(1, self.numCols):
+                self.SetStringItem(index, col, str(data[col]))
 
             # for ColumnSorterMixin
             self.SetItemData(index, key)
@@ -150,24 +144,17 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
         self.itemDataMap[id][1] = client.connection.address[0]
         self.itemDataMap[id][2] = client.name
         self.itemDataMap[id][3] = client.status
-        if len(client.payoffs) == 0:
-            self.itemDataMap[id][4] = 0.00
-        else:
-            self.itemDataMap[id][4] = client.payoffs[-1]
-        self.itemDataMap[id][5] = client.getTotalPayoff()
-        self.itemDataMap[id][6] = client.getTotalDollarPayoff()
+        self.itemDataMap[id][4] = client.earnings
+        self.itemDataMap[id][5] = client.earnings # FIXME: round it
+        self.itemDataMap[id][6] = 0 # FIXME: showup payment
+        self.itemDataMap[id][7] = client.earnings # FIXME: total
 
         # Get the position of the item
         itemPos = self.FindItemData(-1, id)
 
         # Update the representation in the ListCtrl
-        self.SetStringItem(itemPos, 0, str(self.itemDataMap[id][0]))
-        self.SetStringItem(itemPos, 1, self.itemDataMap[id][1])
-        self.SetStringItem(itemPos, 2, self.itemDataMap[id][2])
-        self.SetStringItem(itemPos, 3, self.itemDataMap[id][3])
-        self.SetStringItem(itemPos, 4, '%0.2f' % self.itemDataMap[id][4])
-        self.SetStringItem(itemPos, 5, '%0.2f' % self.itemDataMap[id][5])
-        self.SetStringItem(itemPos, 6, '%0.2f' % self.itemDataMap[id][6])
+        for col in range(self.numCols):
+            self.SetStringItem(itemPos, col, str(self.itemDataMap[id][col]))
 
         if self.columnsNeedResize:
             self.resizeColumns()

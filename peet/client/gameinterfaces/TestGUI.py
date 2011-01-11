@@ -40,7 +40,7 @@ class TestGUI(GameGUI.GameGUI):
         sizer.Add(self.sendButton)
         self.payoffLabel = wx.StaticText(self.panel, wx.ID_STATIC
                                          ,
-                "Match Payoff: $'0.00 ($0.00)")
+                "Payoff: $'0.00 ($0.00)")
         sizer.Add(self.payoffLabel)
 
         self.messageBox = wx.TextCtrl(self.panel, #size=(400,300),
@@ -59,11 +59,10 @@ class TestGUI(GameGUI.GameGUI):
         if mes['type'] == 'gm':
             self.sendButton.Enable(True)
         elif mes['type'] == 'payoff':
-            self.payoffLabel.SetLabel("Match Payoff: $'%0.2f ($%0.2f)"\
+            self.payoffLabel.SetLabel("Payoff: $'%0.2f ($%0.2f)"\
                     % (mes['experimentCurrency'], mes['realCurrency']))
-        elif mes['type'] == 'matchAndRound':
-            self.matchRoundLabel.SetLabel("Match " + str(mes['match']+1) +
-                    ", Round " + str(mes['round']+1))
+        elif mes['type'] == 'round':
+            self.matchRoundLabel.SetLabel("Round " + str(mes['round']+1))
 
     def onSendClicked(self, event):
         self.sendButton.Enable(False)

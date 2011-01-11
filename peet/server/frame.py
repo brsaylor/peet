@@ -24,6 +24,7 @@ import thread
 import random
 import time
 import csv
+from decimal import Decimal
 import wx
 import wx.lib.newevent
 
@@ -48,7 +49,6 @@ class Frame(wx.Frame):
         self.outputDir = None
         self.clients = []
         self.clientsLoggedIn = 0
-        self.matchNum = 0
         self.roundNum = 0
 
         self.chatEnabled = False
@@ -121,9 +121,6 @@ class Frame(wx.Frame):
         self.autoAdvanceRoundCheckBox = wx.CheckBox(self.panel, wx.ID_ANY,
                                                     "Auto-advance rounds")
         hbox.Add(self.autoAdvanceRoundCheckBox)
-        self.autoAdvanceMatchCheckBox = wx.CheckBox(self.panel, wx.ID_ANY,
-                                                    "Auto-advance matches")
-        hbox.Add(self.autoAdvanceMatchCheckBox)
         bsizer.Add(hbox)
         mainSizer.Add(bsizer, 0, flag=wx.EXPAND|wx.ALL, border=borderSize)
         self.Bind(wx.EVT_BUTTON, self.onConnectClicked, self.connectButton)
@@ -137,9 +134,9 @@ class Frame(wx.Frame):
         box = wx.StaticBox(self.panel, wx.ID_STATIC, "Status")
         box.SetFont(self.boxFont)
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
-        self.matchRoundLabel = wx.StaticText(self.panel, wx.ID_STATIC,
-                                            "Match -, Round -")
-        bsizer.Add(self.matchRoundLabel)
+        self.roundLabel = wx.StaticText(self.panel, wx.ID_STATIC,
+                                            "Round -")
+        bsizer.Add(self.roundLabel)
         self.listCtrl = ClientStatusListCtrl(self.panel, wx.ID_ANY,
                                              style=wx.LC_REPORT)
         bsizer.Add(self.listCtrl, 1, wx.EXPAND)
@@ -226,8 +223,8 @@ class Frame(wx.Frame):
 
         if message['type'] == 'connect':
             self.postMessage("Client " + str(clientConn.id) + " connected")
-            client = ClientData(clientConn.id, '', 'Connected', [],
-                    clientConn, self.exchangeRates)
+            client = ClientData(clientConn.id, '', 'Connected', Decimal('0.00'),
+                    clientConn)
             self.clients[clientConn.id] = client
             self.listCtrl.updateClient(client)
 
@@ -285,12 +282,8 @@ class Frame(wx.Frame):
                     groupID = ''
                 else:
                     groupID = str(client.group.id)
-                if self.params['matches'][self.matchNum]['practice']:
-                    practice = 1
-                else:
-                    practice = 0
-                row = [self.sessionID, self.experimentID, self.matchNum+1,\
-                        practice, self.roundNum+1, clientConn.id, groupID,
+                row = [self.sessionID, self.experimentID,\
+                        self.roundNum+1, clientConn.id, groupID,
                         message['message']]
                 self.chatHistory.append(row)
 
@@ -500,7 +493,7 @@ class Frame(wx.Frame):
             fname = self.sessionID + '-chat.csv'
             file = open(os.path.join(self.outputDir, fname), 'wb')
             csvwriter = csv.writer(file)
-            headers = ['sessionID', 'experimentID', 'match', 'practice',\
+            headers = ['sessionID', 'experimentID',\
                 'round', 'subject', 'group', 'chatmessage']
             csvwriter.writerow(headers)
             file.close()
@@ -529,7 +522,7 @@ class Frame(wx.Frame):
                 self.clients, self.outputDir)
 
         self.gameController.start()
-        self.matchRoundLabel.SetLabel("Match 0, Round 0")
+        self.roundLabel.SetLabel("Round 0")
 
     def setParams(self, params, filename=None, modified=False):
         self.params = params
@@ -549,23 +542,17 @@ class Frame(wx.Frame):
         if self.outputDir != None:
             self.connectButton.Enable(True)
 
-        self.exchangeRates = []
-        for match in self.params['matches']:
-            self.exchangeRates.append(match['exchangeRate'])
-
     def postMessage(self, str):
         """ wx.CallAfter makes this safe to call from a different thread (i.e.
         the GameControl thread) """
         wx.CallAfter(self.messageBox.AppendText, str+'\n')
 
-    def updateMatchRound(self, matchNum, roundNum):
-        """ Called by the controller to inform server of current match&round """
-        self.matchNum = matchNum
+    def updateRound(self, roundNum):
+        """ Called by the controller to inform server of current round """
         self.roundNum = roundNum
-        wx.CallAfter(self.matchRoundLabel.SetLabel,
-                'Match ' + str(matchNum+1) + ', Round ' + str(roundNum+1))
+        wx.CallAfter(self.roundLabel.SetLabel, 'Round ' + str(roundNum+1))
 
-    def roundFinished(self, matchFinished=False, gameFinished=False):
+    def roundFinished(self, gameFinished=False):
         """ Called by the controller to inform the server that the round has
         finished.  Controller will wait until server calls
         controller.nextRound(). """
@@ -591,23 +578,24 @@ class Frame(wx.Frame):
         try:
             statusFile = open(statusFilename, 'wb')
             csvwriter = csv.writer(statusFile)
-            headerRow = ['Match', 'Round', 'ID', 'IP Address', 'Name',\
-                    'Status', 'Match Earnings', 'Game Earnings',\
+            headerRow = ['Round', 'ID', 'IP Address', 'Name',\
+                    'Status', 'Game Earnings ($)',\
                     'Rounded Earnings ($)',\
                     'Show-up Payment ($)',\
                     'Total Earnings ($)']
             csvwriter.writerow(headerRow)
             for c in self.clients:
-                roundedEarnings =\
-                        c.getTotalDollarPayoff( self.params['rounding']) 
-                totalEarnings = roundedEarnings + self.params['showUpPayment']
-                row = [str(self.matchNum+1), str(self.roundNum+1),\
+
+                # FIXME: Round the earnings
+                roundedEarnings = c.earnings
+                totalEarnings = roundedEarnings # FIXME add showup pmt
+
+                row = [str(self.roundNum+1),\
                         str(c.id), c.connection.address[0],\
-                        c.name, c.status, str(c.payoffs[-1]),\
-                        str(c.getTotalPayoff()),\
-                        '%0.2f' % roundedEarnings,\
-                        '%0.2f' % self.params['showUpPayment'],\
-                        '%0.2f' % totalEarnings]
+                        c.name, c.status, str(c.earnings),\
+                        str(roundedEarnings),\
+                        str(roundedEarnings),\
+                        str(roundedEarnings)]
                 csvwriter.writerow(row)
 
             statusFile.close()
@@ -643,12 +631,7 @@ class Frame(wx.Frame):
                 return
             self.nextRoundButton.Enable(True)
             autoNextRound = self.autoAdvanceRoundCheckBox.GetValue()
-            autoNextMatch = self.autoAdvanceMatchCheckBox.GetValue()
-            if matchFinished:
-                self.nextRoundButton.SetLabel('Next Match')
-                if autoNextRound and autoNextMatch:
-                    self.onNextRoundClicked(None)
-            elif autoNextRound:
+            if autoNextRound:
                 self.onNextRoundClicked(None)
 
         wx.CallAfter(run)

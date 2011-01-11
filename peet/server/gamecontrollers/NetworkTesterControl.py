@@ -45,9 +45,6 @@ class NetworkTesterControl(GameControl.GameControl):
 
         self.mesID = 0
 
-    def initMatch(self):
-        pass
-
     def runRound(self):
 
         # send initial batch of messages

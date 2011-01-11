@@ -106,19 +106,6 @@ class GameGUI(wx.Frame):
         """ Show window with end of experiment message.  You can override this
         to display a custom message. """
 
-        exchangeRatesEqual = True
-        for rate in mes['exchangeRates']:
-            if rate != mes['exchangeRates'][0]:
-                exchangeRatesEqual = False
-                break
-        if exchangeRatesEqual:
-            rate = mes['exchangeRates'][0]
-            rateText = 'The exchange rate is %0.4f.' % rate
-        else:
-            rate = mes['totalDollarPayoff'] / mes['totalPayoff']
-            rateText = 'The average exchange rate on your earnings is %0.4f.'\
-                    % rate
-
         frame = wx.Frame(self, title="End of Experiment",\
                 style= wx.CAPTION | wx.CLIP_CHILDREN | wx.FRAME_FLOAT_ON_PARENT)
         panel = wx.Panel(frame)
@@ -134,12 +121,10 @@ class GameGUI(wx.Frame):
         heading.SetFont(headingfont)
         vsizer.Add(heading, flag=wx.ALIGN_CENTER|wx.ALL, border=12)
         roundingString = roundingOptions[mes['rounding']]
-        text = 'Your total earnings in experiment currency are %0.2f.\n'\
-                % mes['totalPayoff']\
-                + '' + rateText + '\n'\
-                + 'Your show-up payment is $%0.2f.\n' % mes['showUpPayment']\
-                +'Your total earnings in US dollars, rounded %s, are $%0.2f.\n'\
-                % (roundingString, mes['totalDollarPayoff'])
+        text = 'Your game earnings are ' + str(mes['earnings']) + '.\n'\
+                + 'Your show-up payment is ' + str(mes['showUpPayment']) +'.\n'\
+                + 'Your total payment in US dollars, rounded %s, is %s.\n'\
+                % (roundingString, str(mes['totalPayment']))
         if mes.get('survey', False):
             text += 'Please click on the button below to take a short survey.'
         else:

@@ -1,0 +1,9 @@
+{
+    "type": "object",
+    "properties": {
+        "numGroups": {
+            "type": "number",
+            "default": 1
+        }
+    }
+}

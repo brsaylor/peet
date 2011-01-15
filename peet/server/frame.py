@@ -26,6 +26,7 @@ import time
 import csv
 from decimal import Decimal
 import re
+import json
 import wx
 import wx.lib.newevent
 
@@ -43,6 +44,8 @@ class Frame(wx.Frame):
     def __init__(self,parent,id,title):
         wx.Frame.__init__(self,parent,wx.ID_ANY, title, size = (800,600))
 
+        self.gameType = None
+        self.schema = None
         self.params = None
         self.filename = None
         self.paramsModified = False
@@ -392,10 +395,15 @@ class Frame(wx.Frame):
         """ Called when a game type is selected from the wx.Choice menu. """
         if self.gameChooser.GetSelection() == 0:
             self.gameType = None
+            self.schema = None
             enableParamButtons = False
         else:
             self.gameType = event.GetString()
-            enableParamButtons = True
+            if not self.loadSchema():
+                self.gameType = None
+                enableParamButtons = False
+            else:
+                enableParamButtons = True
 
         # Only enable the parameter buttons if a valid game type is selected;
         # otherwise, we don't know what parameter schema to load.
@@ -569,6 +577,27 @@ class Frame(wx.Frame):
         # FIXME security hole - need to validate className first
         gameClass = eval(moduleName + '.' + className)
         return gameClass
+
+    def loadSchema(self):
+        """ Assuming self.gameType is set to the name of a valid game type, load
+        the associated schema file into self.schema.
+        @return True if successful, False if unsuccessful """
+        filename = os.path.join(os.path.dirname(__file__), 'schemata',\
+                self.gameType + 'Schema.json')
+        try:
+            schemaFile = open(filename)
+            self.schema = json.load(schemaFile)
+            schemaFile.close()
+        except:
+            errorstring = "Error loading parameter schema: "\
+                    + str(sys.exc_info()[1])
+            dlg = wx.MessageDialog(self, errorstring,
+                    'Error Loading Schema', wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            dlg.Destroy()
+            return False
+
+        return True
 
     def setParams(self, params, filename=None, modified=False):
         self.params = params

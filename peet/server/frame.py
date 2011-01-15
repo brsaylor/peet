@@ -25,6 +25,7 @@ import random
 import time
 import csv
 from decimal import Decimal
+import re
 import wx
 import wx.lib.newevent
 
@@ -56,6 +57,19 @@ class Frame(wx.Frame):
         self.chatRowsWritten = 0
         self.chatFilter = None
 
+        # Get a list of the available gamecontrollers
+        controlDir = os.path.join(os.path.dirname(__file__), 'gamecontrollers')
+        fileNames = os.listdir(controlDir)
+        fileNames.remove('__init__.py')
+        fileNames.remove('GameControl.py')
+        gameNames = []
+        for fileName in fileNames:
+            if re.match('^.+Control\.py$', fileName):
+                gameNames.append(re.sub('Control\.py', '', fileName))
+        gameNames.sort()
+
+        borderSize = 6
+
         # In Windows, a Frame is dark gray, so we need a Panel inside the frame.
         self.panel = wx.Panel(self)
         mainSizer = wx.BoxSizer(wx.VERTICAL)
@@ -65,18 +79,30 @@ class Frame(wx.Frame):
         self.boxFont.SetWeight(wx.FONTWEIGHT_BOLD)
         self.boxFont.SetPointSize(int(1.25 * self.boxFont.GetPointSize()))
 
-        borderSize = 6
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        label = wx.StaticText(self.panel, wx.ID_STATIC, "Game Type: ")
+        label.SetFont(self.boxFont)
+        hsizer.Add(label)
+        self.gameChooser = wx.Choice(self.panel, wx.ID_ANY,\
+                choices=['None Selected']+gameNames)
+        hsizer.Add(self.gameChooser)
+        mainSizer.Add(hsizer, border=borderSize, flag=wx.ALL)
+
+        self.Bind(wx.EVT_CHOICE, self.onGameSelected, self.gameChooser)
 
         # Experiment parameters box
         box = wx.StaticBox(self.panel, wx.ID_STATIC, "Parameters")
         box.SetFont(self.boxFont)
         bsizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         self.filenameText = wx.StaticText(self.panel, wx.ID_STATIC,
-                                          "File: [No file]")
+                                          "Parameter File: [No file]")
         bsizer.Add(self.filenameText)
         self.newButton = wx.Button(self.panel, wx.ID_ANY, "New")
+        self.newButton.Enable(False)
         self.openButton = wx.Button(self.panel, wx.ID_ANY, "Open")
+        self.openButton.Enable(False)
         self.editButton = wx.Button(self.panel, wx.ID_ANY, "Edit")
+        self.editButton.Enable(False)
         self.outputDirButton = wx.Button(self.panel, wx.ID_ANY,
                                          "Choose output folder")
         hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -362,6 +388,21 @@ class Frame(wx.Frame):
         self.communicator.send(clientConn, {'type': 'whoareyou',
             'disconnectedClients': disconnectedClients})
 
+    def onGameSelected(self, event):
+        """ Called when a game type is selected from the wx.Choice menu. """
+        if self.gameChooser.GetSelection() == 0:
+            self.gameType = None
+            enableParamButtons = False
+        else:
+            self.gameType = event.GetString()
+            enableParamButtons = True
+
+        # Only enable the parameter buttons if a valid game type is selected;
+        # otherwise, we don't know what parameter schema to load.
+        self.newButton.Enable(enableParamButtons)
+        self.openButton.Enable(enableParamButtons)
+        self.editButton.Enable(enableParamButtons)
+
     def onNewClicked(self, event):
         editor = parameters.ParamEditor(self)
         if editor.ShowModal() == parameters.KEEP:
@@ -510,19 +551,24 @@ class Frame(wx.Frame):
 
         self.startButton.Enable(False)
 
-        # Tricky stuff to instantiate the class from the string containing its
-        # name.
-        className = self.params['gametype'] + 'Control'
-        self.postMessage("Starting game controller " + className)
-        moduleName = 'peet.server.gamecontrollers.' + className
-        exec 'import ' + moduleName
-        # FIXME security hole - need to validate className first
-        gameClass = eval(moduleName + '.' + className)
+        gameClass = self.getGameClass(self.gameType)
         self.gameController = gameClass(self, self.params, self.communicator,
                 self.clients, self.outputDir)
 
         self.gameController.start()
         self.roundLabel.SetLabel("Round 0")
+
+    def getGameClass(self, gameType):
+        """ Given the name of a game type (i.e. the part of the controller class
+        name before 'Control'), return its class object. """
+        # Tricky stuff to instantiate the class from the string containing its
+        # name.
+        className = gameType + 'Control'
+        moduleName = 'peet.server.gamecontrollers.' + className
+        exec 'import ' + moduleName
+        # FIXME security hole - need to validate className first
+        gameClass = eval(moduleName + '.' + className)
+        return gameClass
 
     def setParams(self, params, filename=None, modified=False):
         self.params = params
@@ -533,7 +579,7 @@ class Frame(wx.Frame):
         else:
             mtext = ''
         if self.filename == None:
-            self.filenameText.SetLabel("File: " + mtext + "[No file]")
+            self.filenameText.SetLabel("Parameter File: " + mtext + "[No file]")
         else:
             dname, fname = os.path.split(self.filename)
             self.filenameText.SetLabel("File: " + mtext + fname + " (" + dname

@@ -32,10 +32,8 @@ from peet.shared.constants import roundingOptions
 KEEP = 1 # Normally returned by ParamEditor.ShowModal() 
 DISCARD = 2  # Returned by ParamEditor.ShowModal() if user discards changes
 
-fileDlgWildcard = "*.ini|*.ini|"\
+fileDlgWildcard = "JSON files|*.json|"\
                     "All files|*"
-
-
 
 def getParamsFromFile_old(filename):
     """

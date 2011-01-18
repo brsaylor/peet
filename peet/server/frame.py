@@ -31,6 +31,7 @@ import wx
 import wx.lib.newevent
 
 from peet.server import parameters
+from peet.server.parameditors import TreeEditor
 from peet.server import servernet
 import peet.server.gamecontrollers
 from peet.server.ClientData import ClientData
@@ -412,13 +413,14 @@ class Frame(wx.Frame):
         self.editButton.Enable(enableParamButtons)
 
     def onNewClicked(self, event):
-        editor = parameters.ParamEditor(self)
+        editor = TreeEditor.TreeEditor(self, self.schema)
         if editor.ShowModal() == parameters.KEEP:
-            print 'keep'
+            #print 'keep'
             self.setParams(editor.getParams(), editor.getFilename(),
-                    editor.modified)
+                    editor.getModified())
         else:
-            print 'discard'
+            #print 'discard'
+            pass
         editor.Destroy()
 
     def onOpenClicked(self, event):
@@ -428,19 +430,20 @@ class Frame(wx.Frame):
                 wildcard=parameters.fileDlgWildcard, defaultDir=defaultDir)
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
-            self.setParams(parameters.getParamsFromFile(filename), filename)
+            self.setParams(json.load(open(filename)), filename)
             # FIXME handle file errors
         dlg.Destroy()
         
     def onEditClicked(self, event):
-        editor = parameters.ParamEditor(self, self.params, self.filename,
-                readonly=self.paramsReadOnly)
+        editor = TreeEditor.TreeEditor(self, self.schema, self.params,\
+                self.filename, readonly=self.paramsReadOnly)
         if editor.ShowModal() == parameters.KEEP and not self.paramsReadOnly:
-            print 'keep'
+            #print 'keep'
             self.setParams(editor.getParams(), editor.getFilename(),
-                    editor.modified)
+                    editor.getModified())
         else:
-            print 'discard'
+            #print 'discard'
+            pass
         editor.Destroy()
 
     def onOutputDirClicked(self, event):

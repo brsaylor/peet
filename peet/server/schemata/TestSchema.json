@@ -1,9 +1,73 @@
 {
     "type": "object",
     "properties": {
-        "numGroups": {
+        "rounding": {
+            "description": "Rounding method",
+            "type": "number",
+            "default": 0
+        },
+        "notes": {
+            "type": "string",
+            "default": ""
+        },
+        "showUpPayment": {
+            "type": "number",
+            "default": 5.00
+        },
+        "numPlayers": {
+            "description": "Number of players",
             "type": "number",
             "default": 1
+        },
+        "experimentID": {
+            "type": "string",
+            "default": "TEST"
+        },
+        "gametype": {
+            "type": "string",
+            "default": "Test"
+        },
+        "surveyFile": {
+            "type": "string",
+            "default": ""
+        },
+        "matches": {
+            "type": "array",
+            "default": [],
+            "items": {
+                "type": "object",
+                "default": {},
+                "properties": {
+                    "exchangeRate": {
+                        "type": "number",
+                        "default": 1.0
+                    },
+                    "numRounds": {
+                        "description": "Number of rounds",
+                        "type": "number",
+                        "default": 10
+                    },
+                    "practice": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "description": {
+                        "type": "string",
+                        "default": ""
+                    },
+                    "customParams": {
+                        "type": "object",
+                        "default": {},
+                        "properties": {
+                            "numGroups": {
+                                "description": "Number of groups",
+                                "type": "number",
+                                "default": 1
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

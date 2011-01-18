@@ -470,6 +470,8 @@ class TreeEditor(wx.Dialog):
             if itemType == list:
                 menuItem = menu.Append(wx.ID_ANY, "Append Item")
                 self.Bind(wx.EVT_MENU, self._onAppendItemClicked, menuItem)
+                menuItem = menu.Append(wx.ID_ANY, "Paste Items")
+                self.Bind(wx.EVT_MENU, self._onPasteItemsClicked, menuItem)
 
             if not item == self._tree.GetRootItem():
                 menuItem = menu.Append(wx.ID_ANY, "Delete Item")
@@ -624,6 +626,35 @@ class TreeEditor(wx.Dialog):
         self._tree.ExpandAllChildren(self.currentItem)
 
         self._setModified()
+
+    def _onPasteItemsClicked(self, event):
+        success = False
+        if not wx.TheClipboard.IsOpened():
+            data = wx.TextDataObject()
+            wx.TheClipboard.Open()
+            success = wx.TheClipboard.GetData(data)
+            wx.TheClipboard.Close()
+        else:
+            print "Error: Clipboard locked"
+
+        if success:
+            array = data.GetText().split()
+
+            # Convert the elements to the type in the schema
+            # FIXME: this won't work if they are booleans represented as strings
+            schemaType = self._tree.GetItemPyData(self.currentItem)\
+                    ['schema']['items']['type']
+            try:
+                array = map(parameters.JSONTypeMap[schemaType], array)
+            except:
+                print "Error:", sys.exc_info()
+                # FIXME: display error dialog
+                return
+
+            self._setItemValue(self.currentItem, array)
+            self._tree.ExpandAllChildren(self.currentItem)
+        else:
+            print "Error reading clipboard"
 
     def _onDeleteItemClicked(self, event):
         """ Delete the current item. """

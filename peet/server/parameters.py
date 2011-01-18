@@ -35,6 +35,53 @@ DISCARD = 2  # Returned by ParamEditor.ShowModal() if user discards changes
 fileDlgWildcard = "JSON files|*.json|"\
                     "All files|*"
 
+# Default type translations of json module:
+#
+# JSON	        Python
+# object	    dict
+# array	        list
+# string	    unicode
+# number (int)	int, long
+# number (real)	float
+# true	        True
+# false	        False
+# null	        None
+#
+# JSON Schema simple types:
+# 
+#      string  Value MUST be a string.
+# 
+#      number  Value MUST be a number, floating point numbers are
+#        allowed.
+# 
+#      integer  Value MUST be an integer, no floating point numbers are
+#        allowed.  This is a subset of the number type.
+# 
+#      boolean  Value MUST be a boolean.
+# 
+#      object  Value MUST be an object.
+# 
+#      array  Value MUST be an array.
+# 
+#      null  Value MUST be null.  Note this is mainly for purpose of
+#        being able use union types to define nullability.  If this type
+#       is not included in a union, null values are not allowed (the
+#      primitives listed above do not allow nulls on their own).
+# 
+#      any  Value MAY be of any type including null.
+#
+# This dictionary maps JSON Schema type strings to Python types.
+JSONTypeMap = {
+        'string': str,
+        'number': float,
+        'integer': int,
+        'boolean': bool,
+        'object': dict,
+        'array': list,
+        'null': None,
+        'any': str
+}
+
 def getParamsFromFile_old(filename):
     """
     Read experiment parameters from the given file.

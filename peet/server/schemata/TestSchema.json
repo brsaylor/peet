@@ -1,6 +1,14 @@
 {
     "type": "object",
     "properties": {
+        "anArray": {
+            "type": "array",
+            "items": {
+                "type": "integer",
+                "default": 0
+            },
+            "default": []
+        },
         "rounding": {
             "description": "Rounding method",
             "type": "number",

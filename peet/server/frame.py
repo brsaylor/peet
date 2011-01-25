@@ -424,10 +424,9 @@ class Frame(wx.Frame):
         editor.Destroy()
 
     def onOpenClicked(self, event):
-        defaultDir = os.path.join(os.path.dirname(__file__),\
-                'server/paramfiles')
         dlg = wx.FileDialog(self, message="Open Parameter File", style=wx.OPEN,\
-                wildcard=parameters.fileDlgWildcard, defaultDir=defaultDir)
+                wildcard=parameters.fileDlgWildcard,\
+                defaultDir=parameters.defaultDir)
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
             self.setParams(json.load(open(filename)), filename)
@@ -461,26 +460,20 @@ class Frame(wx.Frame):
 
     def onConnectClicked(self, event):
 
-        # Check that the gametype parameter is valid.  It should be the module
-        # name of an existing game controller, and since we're going to be
-        # calling exec and eval on it, we need to make sure that's what it is,
-        # and not malicious code snuck into the parameter file.
-        if not ((self.params['gametype'] + 'Control')\
-                in peet.server.gamecontrollers.__all__):
-            errorstring = "Invalid game type.  You probably don't have\n"\
-                          "the specified game module, or there is an error\n"\
-                          "in your parameter file.  If there is an error in\n"\
-                          "your parameter file, you will need to correct it\n"\
-                          "manually using a text editor."
-            dlg = wx.MessageDialog(self, errorstring,
-                    'Error', wx.OK | wx.ICON_ERROR)
-            dlg.ShowModal()
-            dlg.Destroy()
-            return
+        # instantiate the game controller
+        gameClass = self.getGameClass(self.gameType)
+        self.gameController = gameClass(self)
 
-        # Check that survey file exists:
-        f = self.params.get('surveyFile', '')
-        if f != '' and not os.path.exists(f):
+        # get the required server parameters from the controller
+        self.numPlayers = self.gameController.getNumPlayers()
+        self.rounding = self.gameController.getRounding()
+        self.experimentID = self.gameController.getExperimentID()
+        print 'experimentID is', self.experimentID
+        self.showUpPayment = self.gameController.getShowUpPayment()
+        self.surveyFile = self.gameController.getSurveyFile()
+
+        # Check that survey file exists
+        if self.surveyFile != None and not os.path.exists(f):
             errorstring = "Can't read the survey file specified in the\n"\
                           "parameters.  Please check it and try again."
             dlg = wx.MessageDialog(self, errorstring,
@@ -499,10 +492,9 @@ class Frame(wx.Frame):
         self.outputDirButton.Enable(False)
 
         # send out the message & wait for responses
-        numPlayers = self.params['numPlayers']
-        self.clients = [None for i in range(numPlayers)]
-        self.listCtrl.makeRows(numPlayers)
-        self.communicator.connectToClients(numPlayers)
+        self.clients = [None for i in range(self.numPlayers)]
+        self.listCtrl.makeRows(self.numPlayers)
+        self.communicator.connectToClients(self.numPlayers)
 
     def onMsgClicked(self, event):
         for c in self.clients:
@@ -524,7 +516,6 @@ class Frame(wx.Frame):
         # Generate a unique identifier for this session, based on current time
         # to the second.  A string.
         self.sessionID = time.strftime('%y%m%d%H%M%S', time.localtime())
-        self.experimentID = self.params.get('experimentID', '')
         self.postMessage('Session ID = ' + self.sessionID)
 
         # Attempt to write the parameters to the output folder.  This doubles as
@@ -534,23 +525,25 @@ class Frame(wx.Frame):
         # Also, write the headers to the chat output file.
         try:
             if self.filename == None:
-                fname = 'parameters.ini'
+                fname = 'parameters.json'
             else:
                 fname = os.path.basename(self.filename)
             fname = self.sessionID + '-' + fname
-            parameters.saveParamsToFile(self.params,\
-                    os.path.join(self.outputDir, fname))
+            outfile = open(os.path.join(self.outputDir, fname), 'w')
+            json.dump(self.params, outfile, sort_keys=True, indent=4)
+            outfile.close()
 
             # set up chat output file
             fname = self.sessionID + '-chat.csv'
-            file = open(os.path.join(self.outputDir, fname), 'wb')
-            csvwriter = csv.writer(file)
+            outfile = open(os.path.join(self.outputDir, fname), 'wb')
+            csvwriter = csv.writer(outfile)
             headers = ['sessionID', 'experimentID',\
                 'round', 'subject', 'group', 'chatmessage']
             csvwriter.writerow(headers)
-            file.close()
+            outfile.close()
 
         except:
+            print str(sys.exc_info()[1])
             errorstring = "The selected output folder is not writable.  " +\
                     "Please select a different folder."
             dlg = wx.MessageDialog(self, errorstring,
@@ -561,12 +554,7 @@ class Frame(wx.Frame):
             return
 
         self.startButton.Enable(False)
-
-        gameClass = self.getGameClass(self.gameType)
-        self.gameController = gameClass(self, self.params, self.communicator,
-                self.clients, self.outputDir)
-
-        self.gameController.start()
+        self.gameController.start(self.clients, self.sessionID)
         self.roundLabel.SetLabel("Round 0")
 
     def getGameClass(self, gameType):
@@ -602,6 +590,9 @@ class Frame(wx.Frame):
 
         return True
 
+    def getParams(self):
+        return self.params
+
     def setParams(self, params, filename=None, modified=False):
         self.params = params
         self.filename = filename
@@ -619,6 +610,15 @@ class Frame(wx.Frame):
 
         if self.outputDir != None:
             self.connectButton.Enable(True)
+
+    def getCommunicator(self):
+        return self.communicator
+
+    def getOutputDir(self):
+        return self.outputDir
+
+    def getSessionID(self):
+        return self.sessionID
 
     def postMessage(self, str):
         """ wx.CallAfter makes this safe to call from a different thread (i.e.
@@ -696,11 +696,11 @@ class Frame(wx.Frame):
             print sys.exc_info()[0]
 
         # Start survey (starts in new thread)
-        if gameFinished and self.params['surveyFile'] != '':
+        if gameFinished and self.surveyFile != None:
             self.postMessage('Starting survey')
             survey.start(self, self.sessionID,\
-                    self.params.get('experimentID', ''),\
-                    self.outputDir, self.params.get('surveyFile', ''),\
+                    self.experimentID,\
+                    self.outputDir, self.surveyFile,\
                     len(self.clients))
 
         def run():

@@ -1,27 +1,4 @@
 {
-    "anArray": [
-        1, 
-        2, 
-        3, 
-        4, 
-        5
-    ], 
-    "experimentID": "qwery1", 
-    "gametype": "Test", 
-    "matches": [
-        {
-            "customParams": {
-                "numGroups": 1
-            }, 
-            "description": "", 
-            "exchangeRate": 1.0, 
-            "numRounds": 10, 
-            "practice": false
-        }
-    ], 
-    "notes": "", 
     "numPlayers": 1, 
-    "rounding": 0, 
-    "showUpPayment": 5.0, 
-    "surveyFile": ""
+    "numRounds": 10
 }

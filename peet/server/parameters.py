@@ -15,7 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-This module contains classes and functions for game parameter loading, editing, and saving.
+This module contains stuff related to parameters.  The editor classes are in
+peet.server.parameditors.
 """
 
 import os.path
@@ -26,7 +27,6 @@ import  wx.lib.scrolledpanel as scrolled
 import gamecontrollers
 from gamecontrollers import *
 from peet.shared.widgets import FloatSpin
-from peet.shared.constants import roundingOptions
 
 # Constants
 KEEP = 1 # Normally returned by ParamEditor.ShowModal() 
@@ -34,6 +34,8 @@ DISCARD = 2  # Returned by ParamEditor.ShowModal() if user discards changes
 
 fileDlgWildcard = "JSON files|*.json|"\
                     "All files|*"
+
+defaultDir = os.path.join(os.path.dirname(__file__), 'paramfiles')
 
 # Default type translations of json module:
 #
@@ -553,7 +555,6 @@ class ParamEditor(wx.Dialog):
                 return
             dlg.Destroy()
 
-        defaultDir = os.path.join(os.path.dirname(__file__), 'paramfiles')
         dlg = wx.FileDialog(self, message="Open Parameter File", style=wx.OPEN,\
                 wildcard=fileDlgWildcard, defaultDir=defaultDir)
         if dlg.ShowModal() == wx.ID_OK:

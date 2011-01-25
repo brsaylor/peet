@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-roundingOptions = [\
-        'to the penny',\
-        'to the nearest quarter',\
-        'UP to the nearest quarter',\
-        'to the nearest dollar',\
-        'UP to the nearest dollar'\
-        ]
+roundingOptions = {
+        'PENNY': 'to the penny',
+        'QUARTER': 'to the nearest quarter',
+        'QUARTER_UP': 'UP to the nearest quarter',
+        'DOLLAR': 'to the nearest dollar',
+        'DOLLAR_UP': 'UP to the nearest dollar'
+}

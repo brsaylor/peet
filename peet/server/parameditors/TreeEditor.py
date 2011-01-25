@@ -5,12 +5,6 @@ from peet.server import parameters
 import wx
 import wx.lib.agw.hypertreelist as HTL
 
-fileDlgWildcard = "JSON files|*.json|"\
-                    "All files|*"
-defaultDir = os.path.join(\
-        os.path.split(os.path.dirname(__file__))[0],\
-        'paramfiles')
-
 class TreeEditor(wx.Dialog):
     def __init__(self, parent,\
             schema, params=None, filename=None, readonly=False):
@@ -163,7 +157,8 @@ class TreeEditor(wx.Dialog):
             return
 
         dlg = wx.FileDialog(self, message="Open Parameter File", style=wx.OPEN,\
-                wildcard=fileDlgWildcard, defaultDir=defaultDir)
+                wildcard=parameters.fileDlgWildcard,\
+                defaultDir=parameters.defaultDir)
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
             try:

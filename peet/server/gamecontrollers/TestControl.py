@@ -17,10 +17,10 @@
 import math
 
 from peet.server import servernet
-import GameControl
+from GameControl import GameControl
 from peet.server import GroupData
 
-class TestControl(GameControl.GameControl):
+class TestControl(GameControl):
 
     """Test game controller."""
 
@@ -30,35 +30,10 @@ class TestControl(GameControl.GameControl):
     name = "Test game controller"
     description = "A game controller just for testing."
 
-    # customParams is a static variable, a dictionary that just gives the names,
-    # default values, and descriptions of this controller's game-specific
-    # parameters.  The dictionary is indexed by parameter name, and each element
-    # is a tuple containing the default value and the description, which appears
-    # as a tooltip when the mouse hovers over the name in the parameter editor.
-    customParams = {}
-    customParams['numGroups'] = 1, "Number of groups"
-
-    def __init__(self, server, params, communicator, clients, outputDir):
-        GameControl.GameControl.__init__(self, server, params, communicator,
-                clients, outputDir)
-
-        for client in self.clients:
-            self.initParams[client.id]['greeting'] = \
-                    "Hello, client " + ' ' + str(client.id)
+    def __init__(self, server):
+        GameControl.__init__(self, server)
 
         self.server.enableChat()
-
-        numGroups = int(self.currentMatch['customParams']['numGroups'])
-        groupSize = int(math.ceil(float(len(self.clients)) / float(numGroups)))
-        self.groups = GroupData.makeGroups(numGroups)
-        pos = 0
-        for group in self.groups:
-            group.assignClients(self.clients[pos:(pos+groupSize)])
-            pos += groupSize
-        for group in self.groups:
-            print 'clients in group %d' % group.id
-            for client in group.clients:
-                print ' %d' % client.id
 
     def runRound(self):
         messages = []
@@ -71,3 +46,8 @@ class TestControl(GameControl.GameControl):
         # Add payoffs
         for i, reply in enumerate(replies):
             self.clients[i].earnings += reply['amount']
+
+        if self.roundNum == self.params['numRounds'] - 1:
+            return False
+        else:
+            return True

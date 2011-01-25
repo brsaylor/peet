@@ -20,10 +20,10 @@ import Queue
 import re
 import sys
 import traceback
+from decimal import Decimal
 
 from peet.server import servernet
 from peet.server.ClientData import ClientData
-from peet.shared.constants import roundingOptions
 
 class GameControl:
 
@@ -32,37 +32,83 @@ class GameControl:
     name = "Game controller base class"
     description = "Base class for all game controllers; not useful on its own."
 
-    customParams = {}
-    """A dictionary: 'paramName': defaultValue, 'paramDescription'."""
-    # add type info to make editing nicer?
+    def __init__(self, server):
 
-    def __init__(self, server, params, communicator, clients, outputDir):
-        """ Derived class's __init__ must send initialization messages to
-        clients, including GUIclass name, client id, and client name """
         self.server = server
-        self.params = params
-        self.communicator = communicator
-        self.clients = clients
-        self.outputDir = outputDir
+        self.params = server.getParams()
+        self.communicator = server.getCommunicator()
+        self.outputDir = server.getOutputDir()
+
         self.roundNum = 0
         self.waitQ = Queue.Queue()  # for waiting after each round
         self.readyQ = Queue.Queue()  # for client ready messages
         self.running = False
 
-        # Create initParams, a list of dictionaries containing initialization
-        # parameters to be sent to the client.  The derived class may add
-        # information to these dictionaries in its __init__ method.
-        # parameters that may be set that are automatically recognized by the
-        # initParams will be sent by GameControl.start().
-        #
-        self.initParams = []
-        GUIclassName = re.sub('Control$', 'GUI', self.__class__.__name__)
-        for client in clients:
-            self.initParams.append(dict(type='init', GUIclass=GUIclassName,
-                id=client.id, name=client.name))
 
-        # FIXME: remove when new param system is done
-        self.currentMatch = self.params['matches'][0]
+#-------------------------------------------------------------------------------
+# Methods to override in the derived class
+#-------------------------------------------------------------------------------
+
+    def getNumPlayers(self):
+        """ Return the number of players.  This is called by the server, which
+        then creates the given number of clients. """
+        return 1
+
+    def getRounding(self):
+        """ Return a string representing the type of rounding to apply to each
+        player's final earnings.  The string is a key of the dictionary
+        parameters.roundingOptions. """
+        return 'PENNY'
+
+    def getExperimentID(self):
+        """ Return a string to serve as an identifier for this experiment, for
+        the purpose of grouping multiple sessions that are similar in some way.
+        """
+        return self.__class__.__name__
+
+    def getShowUpPayment(self):
+        """ Return the show-up payment as a Decimal. """
+        return Decimal('0.00')
+
+    def getSurveyFile(self):
+        """ Return the path to the HTML file for the post-experiment survey
+        (None for no survey). """
+        return None
+
+    def initClients(self):
+        """ Called after all clients are ready and before runRound() is
+        called for the first time.  If there are any initialization messages
+        that need to be sent to the clients at the beginning of the game,
+        override this function and send them here. """
+        pass
+
+    def runRound(self):
+        """ Called at the beginning of each round to do anything that happens
+        during a round.  Override this method to process each round.  This
+        method is expected to add client earnings.
+        @return True if this is not the last round, False if it is. """
+        pass
+    
+    def postRound(self):
+        """ Called after runRound() has finished and any output data has been
+        written and payoffs have been updated.  For example, wait for clients to
+        say they are ready for the next round."""
+        pass
+
+    def onUnpause(self):
+        """ Called by the server when the game has been unpaused.  Override this
+        method if you need something in particular to happen here.  If there was
+        a timer running, you will need to start it again here, because it was
+        cancelled when the game was paused.  The variable
+        communicator.timeLeftAtCancel contains the number of seconds (floating
+        point) that were left on the timer when it was cancelled.  This function
+        shouldn't block for too long.  """
+        pass
+
+
+#-------------------------------------------------------------------------------
+# Utility methods for use by the derived class
+#-------------------------------------------------------------------------------
 
     def askAllPlayers(self, messages,\
             sentStatus='Waiting for client reply',
@@ -122,6 +168,11 @@ class GameControl:
             for client in self.clients:
                 self.communicator.send(client.connection, messages)
 
+
+#-------------------------------------------------------------------------------
+# Internal methods and methods for use by the server
+#-------------------------------------------------------------------------------
+
     def clientReady(self, clientConn):
         """ Called by the server when client sends a 'ready' message """
         self.readyQ.put(clientConn)
@@ -143,7 +194,9 @@ class GameControl:
                 self.readyQ.put(c)
             return
 
-    def start(self):
+    def start(self, clients, sessionID):
+        self.clients = clients
+        self.sessionID = sessionID
         thread.start_new_thread(self.run_with_traceback, ())
 
     def run_with_traceback(self):
@@ -160,6 +213,11 @@ class GameControl:
     def run(self):
 
         # Send initialization parameters to clients.
+        self.initParams = []
+        GUIclassName = re.sub('Control$', 'GUI', self.__class__.__name__)
+        for client in self.clients:
+            self.initParams.append(dict(type='init', GUIclass=GUIclassName,
+                id=client.id, name=client.name))
         for i, client in enumerate(self.clients):
             self.communicator.send(client.connection, self.initParams[i])
 
@@ -179,12 +237,12 @@ class GameControl:
         
         self.initClients()
 
-        for r in range(self.currentMatch['numRounds']):
-            self.roundNum = r
+        gameFinished = False
+        while not gameFinished:
             self.server.updateRound(self.roundNum)
             self.tellAllPlayers({'type': 'round', 'round': self.roundNum})
 
-            self.runRound()
+            gameFinished = not self.runRound()
 
             # post-round client updates/communication
             for i, client in enumerate(self.clients):
@@ -196,45 +254,30 @@ class GameControl:
 
             # Tell the server the round is finished,
             # and possibly the game.
-            gameFinished = (self.roundNum == (self.currentMatch['numRounds']-1))
             self.server.roundFinished(gameFinished)
 
             if not gameFinished:
                 # wait for server to give the OK to cont (i.e. call
                 # nextRound())
                 self.waitQ.get()
+                self.roundNum += 1
 
         self.server.postMessage('All rounds finished.')
 
         # Send end-of-experiment message
+        showUpPayment = self.getShowUpPayment()
+        rounding = self.getRounding()
         for client in self.clients:
             mes = {'type': 'endOfExperiment',\
                     'earnings': client.earnings,\
-                    'showUpPayment': self.params['showUpPayment'],\
-                    'rounding': self.params['rounding'],\
+                    'showUpPayment': showUpPayment,\
+                    'rounding': rounding,\
                     'totalPayment': client.earnings } # FIXME
             if self.params.get('surveyFile', '') != '':
                 mes['survey'] = True
             self.communicator.send(client.connection, mes)
 
-    def initClients(self):
-        """ Called after all clients are ready and before runRound() is
-        called for the first time.  If there are any initialization messages
-        that need to be sent to the clients at the beginning of the game,
-        override this function and send them here. """
-        pass
-
-    def runRound(self):
-        """ Called at the beginning of each round to do anything that happens
-        during a round.  Override this method to process each round.  This
-        method is expected to add client payoffs. """
-        pass
-    
-    def postRound(self):
-        """ Called after runRound() has finished and any output data has been
-        written and payoffs have been updated.  For example, wait for clients to
-        say they are ready for the next round."""
-        pass
+        self.running = False
 
     def nextRound(self):
         """ Called by the server to tell the controller to advance to the next
@@ -262,12 +305,3 @@ class GameControl:
 
         return reinitParams
 
-    def onUnpause(self):
-        """ Called by the server when the game has been unpaused.  Override this
-        method if you need something in particular to happen here.  If there was
-        a timer running, you will need to start it again here, because it was
-        cancelled when the game was paused.  The variable
-        communicator.timeLeftAtCancel contains the number of seconds (floating
-        point) that were left on the timer when it was cancelled.  This function
-        shouldn't block for too long.  """
-        pass

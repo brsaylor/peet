@@ -272,7 +272,7 @@ class GameControl:
                     'earnings': client.earnings,\
                     'showUpPayment': showUpPayment,\
                     'rounding': rounding,\
-                    'totalPayment': client.earnings } # FIXME
+                    'totalPayment': client.getRoundedEarnings() + showUpPayment}
             if self.params.get('surveyFile', '') != '':
                 mes['survey'] = True
             self.communicator.send(client.connection, mes)

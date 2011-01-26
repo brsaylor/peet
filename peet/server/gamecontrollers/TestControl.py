@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
+from decimal import Decimal
 
 from peet.server import servernet
 from GameControl import GameControl
@@ -35,6 +36,13 @@ class TestControl(GameControl):
 
         self.server.enableChat()
 
+    def getRounding(self):
+        return self.params['rounding']
+    
+    def getShowUpPayment(self):
+        return Decimal(str(self.params['showUpPayment']))\
+                .quantize(Decimal('0.01'))
+
     def runRound(self):
         messages = []
         for i in range(len(self.clients)):
@@ -45,7 +53,7 @@ class TestControl(GameControl):
 
         # Add payoffs
         for i, reply in enumerate(replies):
-            self.clients[i].earnings += reply['amount']
+            self.clients[i].earnings += reply['amount'] / Decimal('100.00')
 
         if self.roundNum == self.params['numRounds'] - 1:
             return False

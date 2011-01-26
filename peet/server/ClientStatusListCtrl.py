@@ -27,6 +27,8 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
             style=0):
         wx.ListCtrl.__init__(self, parent, id, pos, size, style)
 
+        self.showUpPayment = Decimal('0.00')
+
         # for ColumnSorterMixin: a dictionary of lists, one for each row (data
         # item) which basically replicates what the list contains, but is
         # sortable (e.g. numbers are numbers rather than strings).  Indexed by
@@ -135,8 +137,13 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
 
         self.resizeColumns()
 
+    def setShowUpPayment(self, showUpPayment):
+        self.showUpPayment = showUpPayment
+
     def updateClient(self, client):
         # client is of type ClientData
+
+        roundedEarnings = client.getRoundedEarnings()
 
         # Update the itemDataMap for ColumnSorterMixin
         id = client.id
@@ -145,9 +152,9 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
         self.itemDataMap[id][2] = client.name
         self.itemDataMap[id][3] = client.status
         self.itemDataMap[id][4] = client.earnings
-        self.itemDataMap[id][5] = client.earnings # FIXME: round it
-        self.itemDataMap[id][6] = 0 # FIXME: showup payment
-        self.itemDataMap[id][7] = client.earnings # FIXME: total
+        self.itemDataMap[id][5] = roundedEarnings
+        self.itemDataMap[id][6] = self.showUpPayment
+        self.itemDataMap[id][7] = roundedEarnings + self.showUpPayment
 
         # Get the position of the item
         itemPos = self.FindItemData(-1, id)

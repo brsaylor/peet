@@ -255,6 +255,7 @@ class Frame(wx.Frame):
             self.postMessage("Client " + str(clientConn.id) + " connected")
             client = ClientData(clientConn.id, '', 'Connected', Decimal('0.00'),
                     clientConn)
+            client.setRounding(self.rounding)
             self.clients[clientConn.id] = client
             self.listCtrl.updateClient(client)
 
@@ -467,9 +468,11 @@ class Frame(wx.Frame):
         # get the required server parameters from the controller
         self.numPlayers = self.gameController.getNumPlayers()
         self.rounding = self.gameController.getRounding()
+        print 'rounding is', self.rounding
         self.experimentID = self.gameController.getExperimentID()
         print 'experimentID is', self.experimentID
         self.showUpPayment = self.gameController.getShowUpPayment()
+        self.listCtrl.setShowUpPayment(self.showUpPayment)
         self.surveyFile = self.gameController.getSurveyFile()
 
         # Check that survey file exists
@@ -652,7 +655,6 @@ class Frame(wx.Frame):
             print sys.exc_info()[0]
 
         # Write client status file
-        # FIXME back up first
         try:
             statusFile = open(statusFilename, 'wb')
             csvwriter = csv.writer(statusFile)
@@ -664,23 +666,23 @@ class Frame(wx.Frame):
             csvwriter.writerow(headerRow)
             for c in self.clients:
 
-                # FIXME: Round the earnings
-                roundedEarnings = c.earnings
-                totalEarnings = roundedEarnings # FIXME add showup pmt
+                roundedEarnings = c.getRoundedEarnings()
+                totalEarnings = roundedEarnings + self.showUpPayment
 
                 row = [str(self.roundNum+1),\
                         str(c.id), c.connection.address[0],\
                         c.name, c.status, str(c.earnings),\
                         str(roundedEarnings),\
-                        str(roundedEarnings),\
-                        str(roundedEarnings)]
+                        str(self.showUpPayment),\
+                        str(totalEarnings)]
+                print "writing row to status file"
                 csvwriter.writerow(row)
 
             statusFile.close()
                 
         except:
             print 'Failed to write status file'
-            print sys.exc_info()[0]
+            print sys.exc_info()
 
         # Write chat history
         # FIXME back up first

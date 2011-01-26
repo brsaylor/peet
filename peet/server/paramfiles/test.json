@@ -1,4 +1,6 @@
 {
     "numPlayers": 1, 
-    "numRounds": 10
+    "numRounds": 10, 
+    "rounding": "DOLLAR", 
+    "showUpPayment": 10.0
 }

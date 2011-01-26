@@ -10,6 +10,15 @@
             "description": "Number of rounds",
             "type": "number",
             "default": 10
+        },
+        "showUpPayment": {
+            "type": "number",
+            "default": 10.00
+        },
+        "rounding": {
+            "type": "string",
+            "default": "QUARTER_UP",
+            "enum": ["PENNY","QUARTER","QUARTER_UP","DOLLAR","DOLLAR_UP"]
         }
     }
 }

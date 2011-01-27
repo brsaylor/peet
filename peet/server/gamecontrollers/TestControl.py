@@ -32,6 +32,9 @@ class TestControl(GameControl):
     description = "A game controller just for testing."
 
     def __init__(self, server):
+        """
+        @type server: peet.server.frame.Frame
+        """
         GameControl.__init__(self, server)
 
         self.server.enableChat()

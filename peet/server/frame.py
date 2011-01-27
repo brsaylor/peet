@@ -247,13 +247,13 @@ class Frame(wx.Frame):
         clientConn = event.clientConn
         message = event.message
         if clientConn != None and message['type'] != 'ping':
-            print 'client ', clientConn.id, ': ', message
+            print 'client ', clientConn.id+1, ': ', message
         #if clientConn != None:
         #    self.postMessage("Received message from client " +
         #            str(clientConn.id) + ": " + str(message))
 
         if message['type'] == 'connect':
-            self.postMessage("Client " + str(clientConn.id) + " connected")
+            self.postMessage("Client " + str(clientConn.id+1) + " connected")
             client = ClientData(clientConn.id, '', 'Connected', Decimal('0.00'),
                     clientConn)
             client.setRounding(self.rounding)
@@ -313,9 +313,9 @@ class Frame(wx.Frame):
                 if client.group == None:
                     groupID = ''
                 else:
-                    groupID = str(client.group.id)
+                    groupID = str(client.group.id + 1)
                 row = [self.sessionID, self.experimentID,\
-                        self.roundNum+1, clientConn.id, groupID,
+                        self.roundNum+1, clientConn.id+1, groupID,
                         message['message']]
                 self.chatHistory.append(row)
 
@@ -355,16 +355,16 @@ class Frame(wx.Frame):
                 # Selected client is not disconnected, so as 'whoareyou' again.
                 self.promptRelogin(clientConn)
 
-    def enableChat(self, enable=True, filter=None):
-        """ Enable forwarding of chat messages.  The filter parameter sets the
-        function that determines to whom a chat message will be forwarded.  If
-        set to None (default), chat messages are forwarded to everyone in the
+    def enableChat(self, enable=True, chatFilter=None):
+        """ Enable forwarding of chat messages.  The chatFilter parameter sets
+        the function that determines to whom a chat message will be forwarded.
+        If set to None (default), chat messages are forwarded to everyone in the
         group.  Otherwise, it should be set to a function with two arguments of
         type ClientData (first is source S, second is destination D) that
         returns True if a message from S should be forwarded to D, and False if
         the it should not. """
         self.chatEnabled = enable
-        self.chatFilter = filter
+        self.chatFilter = chatFilter
 
     def forwardChatMessage(self, clientConn, message):
         message['id'] = clientConn.id
@@ -511,7 +511,7 @@ class Frame(wx.Frame):
             #mstring += '---END'
             #mes['message'] = mstring
 
-            mes['message'] = "Hi, client " + str(c.id)
+            mes['message'] = "Hi, client " + str(c.id + 1)
             self.communicator.send(c.connection, mes)
 
     def onStartClicked(self, event):
@@ -673,7 +673,7 @@ class Frame(wx.Frame):
                 totalEarnings = roundedEarnings + self.showUpPayment
 
                 row = [str(self.roundNum+1),\
-                        str(c.id), c.connection.address[0],\
+                        str(c.id+1), c.connection.address[0],\
                         c.name, c.status, str(c.earnings),\
                         str(roundedEarnings),\
                         str(self.showUpPayment),\

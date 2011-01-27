@@ -120,7 +120,7 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
         # populate the itemDataMap for ColumnSorterMixin
         for id in range(count):
             self.itemDataMap[id] =\
-                   [id, '', '', 'Waiting for connection',
+                   [id+1, '', '', 'Waiting for connection',
                            Decimal('0.00'),
                            Decimal('0.00'),
                            Decimal('0.00'),
@@ -147,7 +147,7 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
 
         # Update the itemDataMap for ColumnSorterMixin
         id = client.id
-        self.itemDataMap[id][0] = id
+        self.itemDataMap[id][0] = client.id+1
         self.itemDataMap[id][1] = client.connection.address[0]
         self.itemDataMap[id][2] = client.name
         self.itemDataMap[id][3] = client.status

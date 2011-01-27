@@ -591,9 +591,8 @@ class TreeEditor(wx.Dialog):
         childSchema = currentItemSchema['properties'][propName]
         self._tree.SetItemPyData(child, {'schema': childSchema})
 
-        # FIXME: set a "default default" value of the correct type, if the
-        # schema doesn't supply a default value.
-        self._setItemValue(child, childSchema['default'])
+        # Initialize the new item with the default value
+        self._setItemValue(child, parameters.getDefault(childSchema))
 
         self._tree.OnCompareItems = self._onCompareItems_alpha
         self._tree.SortChildren(self.currentItem)
@@ -612,9 +611,8 @@ class TreeEditor(wx.Dialog):
         childSchema = currentItemSchema['items']
         self._tree.SetItemPyData(child, {'schema': childSchema})
 
-        # FIXME: set a "default default" value of the correct type, if the
-        # schema doesn't supply a default value.
-        self._setItemValue(child, childSchema['default'])
+        # Initialize the new item with the default value
+        self._setItemValue(child, parameters.getDefault(childSchema))
 
         self._tree.OnCompareItems = self._onCompareItems_numeric
         self._tree.SortChildren(self.currentItem)

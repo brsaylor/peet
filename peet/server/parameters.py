@@ -84,6 +84,24 @@ JSONTypeMap = {
         'any': str
 }
 
+# Default values by JSON Schema type, for when default values are needed but are
+# not supplied by the schema.
+JSONDefaults = {
+        'string': "",
+        'number': 1,
+        'integer': 1,
+        'boolean': True,
+        'object': {},
+        'array': [],
+        'null': None,
+        'any': ""
+}
+
+def getDefault(schema):
+    """ Return the default value of the given schema, falling back to
+    JSONDefaults if the schema doesn't supply a default. """
+    return schema.get('default', JSONDefaults[schema['type']])
+
 def getParamsFromFile_old(filename):
     """
     Read experiment parameters from the given file.

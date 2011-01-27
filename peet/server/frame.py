@@ -45,7 +45,6 @@ class Frame(wx.Frame):
     def __init__(self,parent,id,title):
         wx.Frame.__init__(self,parent,wx.ID_ANY, title, size = (800,600))
 
-        self.gameType = None
         self.schema = None
         self.params = None
         self.filename = None
@@ -61,16 +60,17 @@ class Frame(wx.Frame):
         self.chatRowsWritten = 0
         self.chatFilter = None
 
-        # Get a list of the available gamecontrollers
+        # Get the available control classes and put them into a dictionary
+        # indexed by their name attributes.
+        self.controlClassesByName = {}
         controlDir = os.path.join(os.path.dirname(__file__), 'gamecontrollers')
-        fileNames = os.listdir(controlDir)
-        fileNames.remove('__init__.py')
-        fileNames.remove('GameControl.py')
-        gameNames = []
-        for fileName in fileNames:
-            if re.match('^.+Control\.py$', fileName):
-                gameNames.append(re.sub('Control\.py', '', fileName))
-        gameNames.sort()
+        filenames = os.listdir(controlDir)
+        filenames.remove('__init__.py')
+        filenames.remove('GameControl.py')
+        for filename in filenames:
+            if re.match('^.+Control\.py$', filename):
+                controlClass = self.getControlClass(filename)
+                self.controlClassesByName[controlClass.name] = controlClass
 
         borderSize = 6
 
@@ -88,7 +88,8 @@ class Frame(wx.Frame):
         label.SetFont(self.boxFont)
         hsizer.Add(label)
         self.gameChooser = wx.Choice(self.panel, wx.ID_ANY,\
-                choices=['None Selected']+gameNames)
+                choices=['None Selected']\
+                        + sorted(self.controlClassesByName.keys()))
         hsizer.Add(self.gameChooser)
         mainSizer.Add(hsizer, border=borderSize, flag=wx.ALL)
 
@@ -396,13 +397,13 @@ class Frame(wx.Frame):
     def onGameSelected(self, event):
         """ Called when a game type is selected from the wx.Choice menu. """
         if self.gameChooser.GetSelection() == 0:
-            self.gameType = None
+            self.controlClass = None
             self.schema = None
             enableParamButtons = False
         else:
-            self.gameType = event.GetString()
+            self.controlClass = self.controlClassesByName[event.GetString()]
             if not self.loadSchema():
-                self.gameType = None
+                self.controlClass = None
                 enableParamButtons = False
             else:
                 enableParamButtons = True
@@ -462,8 +463,7 @@ class Frame(wx.Frame):
     def onConnectClicked(self, event):
 
         # instantiate the game controller
-        gameClass = self.getGameClass(self.gameType)
-        self.gameController = gameClass(self)
+        self.gameController = self.controlClass(self)
 
         # get the required server parameters from the controller
         self.numPlayers = self.gameController.getNumPlayers()
@@ -560,24 +560,27 @@ class Frame(wx.Frame):
         self.gameController.start(self.clients, self.sessionID)
         self.roundLabel.SetLabel("Round 0")
 
-    def getGameClass(self, gameType):
-        """ Given the name of a game type (i.e. the part of the controller class
-        name before 'Control'), return its class object. """
+    def getControlClass(self, filename):
+        """ Given the filename of a game controller return its class object. """
         # Tricky stuff to instantiate the class from the string containing its
         # name.
-        className = gameType + 'Control'
+        className = re.sub('\.py', '', filename)
         moduleName = 'peet.server.gamecontrollers.' + className
         exec 'import ' + moduleName
         # FIXME security hole - need to validate className first
-        gameClass = eval(moduleName + '.' + className)
-        return gameClass
+        controlClass = eval(moduleName + '.' + className)
+        return controlClass
 
     def loadSchema(self):
-        """ Assuming self.gameType is set to the name of a valid game type, load
-        the associated schema file into self.schema.
+        """ Assuming self.controClass is set to a valid controller class, load
+        the associated schema file into self.schema.  The schema file is assumed
+        to be in the server/schemata directory and be called
+        <prefix>Schema.json, where <prefix> is the part of the controller class
+        name without the "Control" part.
         @return True if successful, False if unsuccessful """
         filename = os.path.join(os.path.dirname(__file__), 'schemata',\
-                self.gameType + 'Schema.json')
+                re.sub('Control$', '', self.controlClass.__name__)\
+                + 'Schema.json')
         try:
             schemaFile = open(filename)
             self.schema = json.load(schemaFile)

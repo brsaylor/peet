@@ -32,18 +32,20 @@ class NetworkTesterControl(GameControl.GameControl):
     name = "Network tester"
     description = "Tests the network system for reliability under load."
 
-    customParams = {}
-
-    def __init__(self, server, params, communicator, clients, outputDir):
-        GameControl.GameControl.__init__(self, server, params, communicator,
-                clients, outputDir)
+    def __init__(self, server):
+        GameControl.GameControl.__init__(self, server)
 
         self.chars = string.letters + string.digits
-        self.sentMessages = [None] * len(self.clients)
         self.maxrdepth = 4
         self.rdepth = 0
 
         self.mesID = 0
+
+    def getNumPlayers(self):
+        return int(self.params['numPlayers'])
+
+    def initClients(self):
+        self.sentMessages = [None] * len(self.clients)
 
     def runRound(self):
 

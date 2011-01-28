@@ -33,6 +33,8 @@ class GameControl:
     description = "Base class for all game controllers; not useful on its own."
 
     def __init__(self, server):
+        """ Note: clients and sessionID are not available in __init__, but they
+        become available by the time initClients() is called. """
 
         self.server = server
         self.params = server.getParams()
@@ -76,10 +78,12 @@ class GameControl:
         return None
 
     def initClients(self):
-        """ Called after all clients are ready and before runRound() is
-        called for the first time.  If there are any initialization messages
-        that need to be sent to the clients at the beginning of the game,
-        override this function and send them here. """
+        """ Called after all clients are ready and before runRound() is called
+        for the first time.  The 'clients' and 'sessionID' attributes are
+        available starting when this method is called by the server.  Override
+        this function to perform any initialization of the ClientData objects,
+        send any initialization messages to the clients, or create any output
+        files (which should have the sessionID prepended to their names). """
         pass
 
     def runRound(self):

@@ -1,3 +1,134 @@
 {
-    "type": "object"
+    "type": "object",
+    "properties": {
+        "numPlayers": {
+            "type": "number"
+        },
+        "numGroups": {
+            "type": "number",
+            "description": "Number of groups"
+        },
+        "matches": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "numRounds": {
+                        "type": "number",
+                        "description": "Number of rounds in this match"
+                    },
+                    "enableChat": {
+                        "type": "string",
+                        "enum": ["NO_CHAT", "SAME_COLOR", "OPEN_CHAT"],
+                        "default": "NO_CHAT"
+                    },
+                    "auctionTime": {
+                        "type": "number",
+                        "description": "Number of seconds for each auction"
+                    },
+                    "prodChoiceTimeLimit": {
+                        "type": "number",
+                        "description": "Time limit in seconds for the production choice"
+                    },
+                    "pf_blue_x": {
+                        "type": "array",
+                        "description": "Blue production function (green values)",
+                        "items": { "type": "number" }
+                    },
+                    "pf_blue_y": {
+                        "type": "array",
+                        "description": "Blue production function (blue values)",
+                        "items": { "type": "number" }
+                    },
+                    "pf_shock_blue_x": {
+                        "type": "array",
+                        "description": "Shocked Blue production function (green values)",
+                        "items": { "type": "number" }
+                    },
+                    "pf_shock_blue_y": {
+                        "type": "array",
+                        "description": "Shocked Blue production function (blue values)",
+                        "items": { "type": "number" }
+                    },
+                    "pf_red_x": {
+                        "type": "array",
+                        "description": "Red production function (green values)",
+                        "items": { "type": "number" }
+                    },
+                    "pf_red_y" : {
+                        "type": "array",
+                        "description": "Red production function (red values)",
+                        "items": { "type": "number" }
+                    },
+                    "pf_shock_red_x": {
+                        "type": "array",
+                        "description": "Shocked Red production function (green values)",
+                        "items": { "type": "number" }
+                    },
+                    "pf_shock_red_y": {
+                        "type": "array",
+                        "description": "Shocked Red production function (red values)",
+                        "items": { "type": "number" }
+                    },
+                    "pf_shockRounds_blue": {
+                        "type": "array",
+                        "description": "Rounds for blue production shock",
+                        "items": { "type": "number" }
+                    },
+                    "pf_shockRounds_red": {
+                        "type": "array",
+                        "description": "Rounds for red production shock",
+                        "items": { "type": "number" }
+                    },
+                    "startingDollars": {
+                        "type": "number",
+                        "description": "Dollars given at match start"
+                    },
+                    "resetBalances": {
+                        "type": "boolean",
+                        "description": "Reset chip balances each round"
+                    },
+                    "scoring_formula": {
+                        "type": "string",
+                        "description": "Python expression that evaluates to the player's current round score.  It will automatically be rounded to the nearest integer value.\nAvailable variables: d (dollars), b (blue), r (red), g (green)\nAvailable functions: abs, float, int, max, min, pow, round",
+                        "default": "d + 10 * (min(b, r, g))"
+                    },
+                    "moneyShocks_blueMkt": {
+                        "type": "array",
+                        "description": "Aggregate quantities for money shocks that will occur before the blue auction",
+                        "items": { "type": "number" }
+                    },
+                    "moneyShocks_blueMkt_rounds": {
+                        "type": "array",
+                        "description": "The corresponding rounds",
+                        "items": { "type": "number" }
+                    },
+                    "moneyShocks_blueMkt_who": {
+                        "type": "array",
+                        "description": "The corresponding targets (1 for blue teams only, 2 for red, 3 for both)",
+                        "items": { "type": "number" }
+                    },
+                    "moneyShocks_redMkt": {
+                        "type": "array",
+                        "description": "Aggregate quantities for money shocks that will occur before the red auction",
+                        "items": { "type": "number" }
+                    },
+                    "moneyShocks_redMkt_rounds": {
+                        "type": "array",
+                        "description": "The corresponding rounds",
+                        "items": { "type": "number" }
+                    },
+                    "moneyShocks_redMkt_who": {
+                        "type": "array",
+                        "description": "The corresponding targets (1 for blue teams only, 2 for red, 3 for both)",
+                        "items": { "type": "number" }
+                    },
+                    "allowNegativeDollars": {
+                        "type": "boolean",
+                        "description": "Set to true to allow dollar balances to go negative. Set to false to prevent dollar balances from going negative."
+                    }
+                }
+            }
+        }
+    }
 }

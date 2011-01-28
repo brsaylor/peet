@@ -70,7 +70,7 @@ class IslandGUI(GameGUI.GameGUI):
         topSizer = wx.BoxSizer(wx.HORIZONTAL)
         topSizer.AddF(wx.StaticText(self.panel, wx.ID_STATIC, self.name), f)
         topSizer.AddF(wx.StaticText(self.panel, wx.ID_STATIC,\
-               'ID: %d' % self.id), f)
+               'ID: %d' % self.id + 1), f)
         self.yourColorLabel = wx.StaticText(self.panel, wx.ID_STATIC, '-')
         topSizer.AddF(self.yourColorLabel, f)
         self.matchRoundLabel = wx.StaticText(self.panel, wx.ID_STATIC, '-')
@@ -189,7 +189,7 @@ class IslandGUI(GameGUI.GameGUI):
 
     def doReinit(self, rp):
 
-        self.onMessageReceived({'type': 'matchAndRound',
+        self.onMessageReceived({'type': 'gm', 'subtype': 'matchAndRound',
             'match': rp['match'],
             'round': rp['round'],
             'doNotPrintEvent': True})
@@ -205,8 +205,8 @@ class IslandGUI(GameGUI.GameGUI):
         # 2009-06-12 Too slow when there are many events. Only do current round.
         for m in range(rp['match'], rp['match']+1):
             for r in range(rp['round'], rp['round']+1):
-                self.mktPanel.addEvent({'type': 'matchAndRound', 'match': m,
-                    'round': r})
+                self.mktPanel.addEvent({'type': 'gm',
+                    'subtype': 'matchAndRound', 'match': m, 'round': r})
                 
                 # True if this is the current round
                 thisRound = (m == rp['match'] and
@@ -264,19 +264,11 @@ class IslandGUI(GameGUI.GameGUI):
     def makeChatString(self, mes, id):
         # Overriding GameGUI.makeChatString()
         s = '(B) ' if id in self.blueIDs else '(R) '
-        s += '%d: %s\n' % (id, mes['message'])
+        s += '%d: %s\n' % (id+1, mes['message'])
         return s
 
     def onMessageReceived(self, m):
-        if m['type'] == 'round': # FIXME
-            self.closeMessageDialogs()
-            self.matchRoundLabel.SetLabel('Match %d, Round %d' %
-                    (1, m['round'] + 1))
-            self.outerSizer.Layout()
-            if not m.has_key('doNotPrintEvent'):
-                self.mktPanel.addEvent(m)
-
-        elif m['type'] == 'pause':
+        if m['type'] == 'pause':
             self.timer.Stop()
             self.submitButton.Disable()
 
@@ -289,9 +281,17 @@ class IslandGUI(GameGUI.GameGUI):
                 self.yourColorLabel.SetLabel(self.color)
                 self.yourColorLabel.SetForegroundColour(self.color)
                 self.yourColorLabel.SetFont(boldFont)
-                self.acctSizerSpacer.Show(m['chat'] == 0)
-                self.chatPanel.Show(m['chat'] > 0)
+                self.acctSizerSpacer.Show(m['chat'] == 'NO_CHAT')
+                self.chatPanel.Show(m['chat'] != 'NO_CHAT')
                 self.mktPanel.setPlayerColor(self.color)
+
+            elif m['subtype'] == 'matchAndRound':
+                self.closeMessageDialogs()
+                self.matchRoundLabel.SetLabel('Match %d, Round %d' %
+                        (m['match'], m['round'] + 1))
+                self.outerSizer.Layout()
+                if not m.has_key('doNotPrintEvent'):
+                    self.mktPanel.addEvent(m)
 
             elif m['subtype'] == 'acctUpdate':
                 self.acctPanel.update(m['acct'])
@@ -567,7 +567,7 @@ class MarketPanel(wx.Panel):
         f = wx.SizerFlags(1)
         f.Align(wx.ALIGN_CENTER)
 
-        if m.get('type') == 'matchAndRound':
+        if m.get('subtype') == 'matchAndRound':
             panel.SetBackgroundColour('black')
             sizer = wx.BoxSizer(wx.VERTICAL)
             panel.SetSizer(sizer)
@@ -617,7 +617,7 @@ class MarketPanel(wx.Panel):
             panel.SetBackgroundColour(self.lightColor)
             sizer = wx.GridSizer(1, 5)
             panel.SetSizer(sizer)
-            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['id'])), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['id']+1)), f)
             sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['amount'])), f)
             sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
             sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
@@ -631,19 +631,19 @@ class MarketPanel(wx.Panel):
             sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
             sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
             sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['amount'])), f)
-            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['id'])), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['id']+1)), f)
 
         elif m['subtype'] == 'transaction':
             panel.SetBackgroundColour(self.lightColor)
             sizer = wx.GridSizer(1, 5)
             panel.SetSizer(sizer)
-            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['buyerID'])), f)
+            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC,str(m['buyerID']+1)),f)
             sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
             t = wx.StaticText(panel, wx.ID_STATIC, str(m['amount']))
             t.SetFont(transactionFont)
             sizer.AddF(t, f)
             sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, ' '), f)
-            sizer.AddF(wx.StaticText(panel, wx.ID_STATIC, str(m['sellerID'])), f)
+            sizer.AddF(wx.StaticText(panel,wx.ID_STATIC,str(m['sellerID']+1)),f)
 
         # In Windows but not GTK, when we expand the scrolledPanel by setting
         # its size to GetBestSize(), the "best size" allows these panels to

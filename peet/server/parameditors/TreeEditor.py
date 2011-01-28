@@ -186,12 +186,13 @@ class TreeEditor(wx.Dialog):
 
     def _onSaveAsClicked(self, event):
         if self.filename == None:
-            dname = defaultDir
+            dname = parameters.defaultDir
             fname = 'untitled.json'
         else:
             dname, fname = os.path.split(self.filename)
         dlg = wx.FileDialog(self, message="Save As...", style=wx.SAVE,
-                defaultDir=dname, defaultFile=fname, wildcard=fileDlgWildcard)
+                defaultDir=dname, defaultFile=fname,
+                wildcard=parameters.fileDlgWildcard)
         val = dlg.ShowModal()
 
         if val != wx.ID_OK:

@@ -468,9 +468,7 @@ class Frame(wx.Frame):
         # get the required server parameters from the controller
         self.numPlayers = self.gameController.getNumPlayers()
         self.rounding = self.gameController.getRounding()
-        print 'rounding is', self.rounding
         self.experimentID = self.gameController.getExperimentID()
-        print 'experimentID is', self.experimentID
         self.showUpPayment = self.gameController.getShowUpPayment()
         self.listCtrl.setShowUpPayment(self.showUpPayment)
         self.surveyFile = self.gameController.getSurveyFile()

@@ -31,36 +31,6 @@ class IslandControl(GameControl.GameControl):
     name = "The Island Experiment (Paul Johnson)"
     description = ""
 
-    customParams = {}
-    customParams['enableChat'] = 0, "Enable chat"\
-                + " (0 = no chat, 1 = chat only with same color, 2 = open chat"
-    customParams['numGroups'] = 1, "Number of groups\n(NOTE: This is an "\
-            "experiment-level parameter taken from the first match only. "\
-            "The value from the first match applies to the whole game.)"
-    customParams['auctionTime'] = 30, "Number of seconds for each auction"
-    customParams['prodChoiceTimeLimit'] = 15,\
-            "Time limit in seconds for the production choice"
-    customParams['pf_blue_x'] = '0 1 3 6 10 15',\
-            "Blue production function (green values)"
-    customParams['pf_blue_y'] = '15 10 6 3 1 0',\
-            "Blue production function (blue values)"
-    customParams['pf_shock_blue_x'] = '0 1 3 6 10',\
-            "Shocked Blue production function (green values)"
-    customParams['pf_shock_blue_y'] = '10 6 3 1 0',\
-            "Shocked Blue production function (blue values)"
-    customParams['pf_red_x'] = '0 1 2 3 4 5',\
-            "Red production function (green values)"
-    customParams['pf_red_y'] = '5 4 3 2 1 0',\
-            "Red production function (red values)"
-    customParams['pf_shock_red_x'] = '0 1 2 3 4',\
-            "Shocked Red production function (green values)"
-    customParams['pf_shock_red_y'] = '4 3 2 1 0',\
-            "Shocked Red production function (red values)"
-    customParams['pf_shockRounds_blue'] = '', 'Rounds for blue production shock'
-    customParams['pf_shockRounds_red'] = '', 'Rounds for red production shock'
-    customParams['startingDollars'] = 10, "Dollars given at match start"
-    customParams['resetBalances'] = 1, 'Reset chip balances each round'
-
     # dictionary of safe things to be passed as eval()'s "locals" argument when
     # evaluating the scoring_formula, so the expression can call no other
     # functions and access no other variables.  The d,b,r, and g will be added
@@ -74,40 +44,49 @@ class IslandControl(GameControl.GameControl):
             'pow': pow,
             'round': round
             }
-    tip = "Python expression that evaluates "
-    tip += "to the player's current round score.\n"
-    tip += "It will automatically be rounded to the nearest integer value.\n"
-    tip += "Available variables: d (dollars), b (blue), r (red), g (green)\n"
-    tip += "Available functions: "
-    safelist = safe_for_eval.keys()
-    safelist.sort()
-    tip += ', '.join(safelist)
-    customParams['scoring_formula'] = 'd + 10 * (min(b, r, g))', tip
 
-    customParams['moneyShocks_blueMkt'] = '','Aggregate quantities for money'\
-            + ' shocks that will occur before the blue auction'
-    customParams['moneyShocks_blueMkt_rounds'] = '', 'The corresponding rounds'
-    customParams['moneyShocks_blueMkt_who'] = '', 'The corresponding targets'\
-            + ' (1 for blue teams only, 2 for red, 3 for both)'
-    customParams['moneyShocks_redMkt'] = '','Aggregate quantities for money'\
-            + ' shocks that will occur before the red auction'
-    customParams['moneyShocks_redMkt_rounds'] = '', 'The corresponding rounds'
-    customParams['moneyShocks_redMkt_who'] = '', 'The corresponding targets'\
-            + ' (1 for blue teams only, 2 for red, 3 for both)'
-
-    customParams['allowNegativeDollars'] = 0,\
-            'Set to 1 to allow dollar balances to go negative.\n'\
-            + 'Set to 0 to prevent dollar balances from going negative.'
-
-    def __init__(self, server, params, communicator, clients, outputDir):
-        GameControl.GameControl.__init__(self, server, params, communicator,
-                clients, outputDir)
+    def __init__(self, server,):
+        GameControl.GameControl.__init__(self, server)
         
-        # Get experiment-level parameters, hackishly expected as the values from
-        # the first match
-        self.numGroups = int(params['matches'][0]['customParams']['numGroups'])
+
+
+        # market events are given timestamps along a timeline that starts with
+        # the first auction and "pauses" in between auctions.  baseTime is the
+        # number of seconds of auction time so far, incremented at the end of
+        # every auction.
+        self.baseTime = 0.0
+
+        # Match number and round number within the match
+        self.matchNum = 0
+        self.matchRoundNum = 0
+
+    def getNumPlayers(self):
+        return self.params['numPlayers']
+    
+    def initClients(self):
+
+        # initialize client data
+        for c in self.clients:
+            #
+            #
+            c.acct = {}  # Account data
+            #
+            # c.events[match][round] is a dictionary of non-market events for
+            # that match and round:
+                # productionChoice_blue
+                # productionChoice_red
+                # productionChoice_green
+                # prodShock
+                # moneyShock_blueMkt
+                # moneyShockAmount_blueMkt
+                # moneyShockAmountRealized_blueMkt
+                # moneyShock_redMkt
+                # moneyShockAmount_redMkt
+                # moneyShockAmountRealized_redMkt
+            c.events = []
 
         # Group clients (once per game)
+        self.numGroups = int(self.params['numGroups'])
         self.groups = GroupData.groupClients_random(
                 self.clients, numGroups=self.numGroups)
 
@@ -124,25 +103,6 @@ class IslandControl(GameControl.GameControl):
                 else:
                     g.clients[i].color = 'red'
 
-        # initialize clients
-        for c in self.clients:
-            #
-            #
-            c.acct = {}  # Account data
-            #
-            # c.events[match][round] is a dictionary of non-market events for
-            # that match and round:
-                # productionChoice_blue
-                # productionChoice_red
-                # productionChoice_green
-                # prodShock
-                # moneyShock_blueMkt
-                # moneyShockAmount_blueMkt
-                # moneyShockAmountRealized_blueMkt
-                # moneyShock_redMkt
-                # moneyShockAmountRealized_redMkt
-            c.events = []
-
         # Keep market history and other event history separate.  That way
         # mktHist is easier to analyze, and it can be sent without filtering to
         # any client that needs it upon re-connect.
@@ -155,7 +115,7 @@ class IslandControl(GameControl.GameControl):
 
         # Market history
         self.mktHistFilename = os.path.join(self.outputDir,
-                server.sessionID + '-market-history.csv')
+                self.sessionID + '-market-history.csv')
         file = open(self.mktHistFilename, 'wb')
         csvwriter = csv.writer(file)
         self.mktHistHeaders = ['Match', 'Round', 'Group', 'Market', 'Action',
@@ -165,7 +125,7 @@ class IslandControl(GameControl.GameControl):
 
         # Round output
         self.roundOutputFilename = os.path.join(self.outputDir,
-                server.sessionID + '-history.csv')
+                self.sessionID + '-history.csv')
         self.roundOutputHeaders = ['Match', 'Round', 'Group', 'Subject', 
                 'color',
 
@@ -181,6 +141,7 @@ class IslandControl(GameControl.GameControl):
                 'moneyShockAmount_blueMkt',
                 'moneyShockAmountRealized_blueMkt',
                 'moneyShock_redMkt',
+                'moneyShockAmount_redMkt',
                 'moneyShockAmountRealized_redMkt']
         file = open(self.roundOutputFilename, 'wb')
         csvwriter = csv.DictWriter(file, self.roundOutputHeaders)
@@ -190,21 +151,16 @@ class IslandControl(GameControl.GameControl):
         csvwriter.writerow(rowdict)
         file.close()
 
-        # market events are given timestamps along a timeline that starts with
-        # the first auction and "pauses" in between auctions.  baseTime is the
-        # number of seconds of auction time so far, incremented at the end of
-        # every auction.
-        self.baseTime = 0.0
+    def initMatch(self):
 
-        self.matchNum = 0
+        # match parameters
+        mp = self.params['matches'][self.matchNum]
 
-    def initClients(self):
+        self.numRounds = int(mp['numRounds'])
+        self.chat = mp['enableChat']
+        self.auctionTime = int(mp['auctionTime'])
+        self.prodChoiceTimeLimit = int(mp['prodChoiceTimeLimit'])
 
-        # Get match parameters
-        cp = self.currentMatch['customParams']
-        self.chat = int(cp['enableChat'])
-        self.auctionTime = int(cp['auctionTime'])
-        self.prodChoiceTimeLimit = int(cp['prodChoiceTimeLimit'])
         # Get production functions
         # x = green, y = industry color 
         self.pf = {}
@@ -212,25 +168,25 @@ class IslandControl(GameControl.GameControl):
         self.pf_shockRounds = {}
         for color in ('blue', 'red'):
 
-            X = map(int, cp['pf_' + color + '_x'].split())
-            Y = map(int, cp['pf_' + color + '_y'].split())
+            X = map(int, mp['pf_' + color + '_x'])
+            Y = map(int, mp['pf_' + color + '_y'])
             self.pf[color] = []
             for i in range(min(len(X), len(Y))):
                 self.pf[color].append((X[i], Y[i]))
 
-            X = map(int, cp['pf_shock_' + color + '_x'].split())
-            Y = map(int, cp['pf_shock_' + color + '_y'].split())
+            X = map(int, mp['pf_shock_' + color + '_x'])
+            Y = map(int, mp['pf_shock_' + color + '_y'])
             self.pf_shock[color] = []
             for i in range(min(len(X), len(Y))):
                 self.pf_shock[color].append((X[i], Y[i]))
 
             self.pf_shockRounds[color] = map(lambda x: int(x) - 1,
-                    cp['pf_shockRounds_' + color].split())
+                    mp['pf_shockRounds_' + color])
 
-        self.resetBalances = bool(int(cp['resetBalances']))
+        self.resetBalances = mp['resetBalances']
         self.startingDollars =\
-                Decimal(cp['startingDollars']).quantize(Decimal('0.01'))
-        self.scoring_formula = cp['scoring_formula']
+                Decimal(mp['startingDollars']).quantize(Decimal('0.01'))
+        self.scoring_formula = mp['scoring_formula']
 
         # dictionaries indexed by color of market
         self.moneyShocks = {}
@@ -240,10 +196,10 @@ class IslandControl(GameControl.GameControl):
         for color in ('blue', 'red'):
             self.moneyShocks[color] = map(
                     lambda x: Decimal(x).quantize(Decimal('0.01')),
-                    cp['moneyShocks_'+color+'Mkt'].split())
+                    mp['moneyShocks_'+color+'Mkt'])
             self.moneyShocks_rounds[color] = map(lambda x: int(x) - 1,
-                    cp['moneyShocks_'+color+'Mkt_rounds'].split())
-            whoList = map(int, cp['moneyShocks_'+color+'Mkt_who'].split())
+                    mp['moneyShocks_'+color+'Mkt_rounds'])
+            whoList = map(int, mp['moneyShocks_'+color+'Mkt_who'])
             self.moneyShocks_who[color] = []
             for who in whoList:
                 if who == 1:
@@ -258,14 +214,14 @@ class IslandControl(GameControl.GameControl):
         #print 'moneyShocks_rounds =', self.moneyShocks_rounds
         #print 'moneyShocks_who =', self.moneyShocks_who
 
-        self.allowNegativeDollars = bool(int(cp['allowNegativeDollars']))
+        self.allowNegativeDollars = mp['allowNegativeDollars']
 
-        if self.chat == 1:
+        if self.chat == 'SAME_COLOR':
             # Chat among players of the same color
-            filter = lambda c1, c2: c1.color == c2.color
+            chatFilter = lambda c1, c2: c1.color == c2.color
         else:
-            filter = None
-        self.server.enableChat(self.chat > 0, filter)
+            chatFilter = None
+        self.server.enableChat(self.chat != 'NO_CHAT', chatFilter)
 
         # initialize clients
         for c in self.clients:
@@ -288,6 +244,13 @@ class IslandControl(GameControl.GameControl):
 
     def runRound(self):
 
+        # If this is the first round of a new match, initialize the match.
+        if self.matchRoundNum == 0:
+            self.initMatch()
+
+        self.tellAllPlayers({'type': 'gm', 'subtype': 'matchAndRound',
+            'match': self.matchNum, 'round': self.matchRoundNum})
+
         # for reconnecting clients
         self.productionChoicesMade = []
         self.auctionInProgress = False
@@ -305,7 +268,7 @@ class IslandControl(GameControl.GameControl):
 
         for c in self.clients:
             c.events[self.matchNum].append({})
-            # c.events[self.matchNum][self.roundNum] is now an empty dict
+            # c.events[self.matchNum][self.matchRoundNum] is now an empty dict
             self.sendAccountUpdate(c)
 
         # Sequence of things in each round:
@@ -344,12 +307,16 @@ class IslandControl(GameControl.GameControl):
         csvwriter = csv.DictWriter(file, self.mktHistHeaders)
         for g in self.groups:
             for color in ('blue', 'red'):
-                for event in g.mktHist[self.matchNum][self.roundNum][color]:
+                for event in g.mktHist[self.matchNum][self.matchRoundNum][color]:
                     row = copy.copy(event)
                     row['Match'] = self.matchNum + 1
-                    row['Round'] = self.roundNum + 1
-                    row['Group'] = g.id
+                    row['Round'] = self.matchRoundNum + 1
+                    row['Group'] = g.id + 1
                     row['Market'] = color
+                    row['Buyer'] = row['Buyer'] + 1 if row.has_key('Buyer')\
+                            else ''
+                    row['Seller'] = row['Seller'] + 1 if row.has_key('Seller')\
+                            else ''
                     csvwriter.writerow(row)
         file.close()
         #
@@ -357,12 +324,28 @@ class IslandControl(GameControl.GameControl):
         file = open(self.roundOutputFilename, 'ab')
         csvwriter = csv.DictWriter(file, self.roundOutputHeaders)
         for c in self.clients:
-            row = {'Match': self.matchNum, 'Round': self.roundNum,
-                    'Group': c.group.id, 'Subject': c.id, 'color': c.color}
+            row = {'Match': self.matchNum+1, 'Round': self.matchRoundNum+1,
+                    'Group': c.group.id+1, 'Subject': c.id+1, 'color': c.color}
             row.update(c.acct)
-            row.update(c.events[self.matchNum][self.roundNum])
+            row.update(c.events[self.matchNum][self.matchRoundNum])
             csvwriter.writerow(row)
         file.close()
+
+        self.matchRoundNum += 1
+
+        # If the current match is over,
+        if self.matchRoundNum == self.numRounds:
+            # if it's the last match, the game is over.
+            if self.matchNum == len(self.params['matches']) - 1:
+                return False
+            else:
+                # Otherwise, begin the next match.
+                self.matchNum += 1
+                self.matchRoundNum = 0
+                return True
+        else:
+            # Go to the next round
+            return True
 
     def doProductionChoice(self, color):
         # Send the message out to everyone;
@@ -370,7 +353,7 @@ class IslandControl(GameControl.GameControl):
         # other clients will send back empty replies.
 
         # determine production shock
-        if self.roundNum in self.pf_shockRounds[color]:
+        if self.matchRoundNum in self.pf_shockRounds[color]:
             prodShock = True
             pf = self.pf_shock[color]
         else:
@@ -380,11 +363,11 @@ class IslandControl(GameControl.GameControl):
         # determine money shock
         for g in self.groups:
             g.moneyShockTargets = []
-        if self.roundNum in self.moneyShocks_rounds[color]:
+        if self.matchRoundNum in self.moneyShocks_rounds[color]:
             # There is a money shock before the <color> auction in this round.
             # Get the position into the arrays so we can get the corresponding
             # quantities and targets.
-            i = self.moneyShocks_rounds[color].index(self.roundNum)
+            i = self.moneyShocks_rounds[color].index(self.matchRoundNum)
             Q = self.moneyShocks[color][i]
             # "who" is {'blue': <bool>, 'red': <bool>}
             who = self.moneyShocks_who[color][i]
@@ -398,7 +381,7 @@ class IslandControl(GameControl.GameControl):
                     if who[c.color]:
                         g.N += 1
                         g.moneyShockTargets.append(c.id)
-                        c.events[self.matchNum][self.roundNum]\
+                        c.events[self.matchNum][self.matchRoundNum]\
                                 ['moneyShock_'+color+'Mkt'] = 1
 
                 # determine the shock quantities for this group
@@ -418,14 +401,14 @@ class IslandControl(GameControl.GameControl):
             g = c.group
             if c.color == color:
                 m['prodShock'] = prodShock
-                c.events[self.matchNum][self.roundNum]\
+                c.events[self.matchNum][self.matchRoundNum]\
                         ['prodShock'] = 1 if prodShock else 0
                 m['pf'] = pf
             if c.id in g.moneyShockTargets:
                 m['moneyShock'] = True
                 amount = g.shocks[g.moneyShockTargets.index(c.id)]
-                c.events[self.matchNum][self.roundNum]\
-                        ['moneyShockAmt_'+color+'Mkt'] = amount
+                c.events[self.matchNum][self.matchRoundNum]\
+                        ['moneyShockAmount_'+color+'Mkt'] = amount
                 # Apply the money shock here, since it's convenient
                 c.acct['dollars'] += amount
                 if not self.allowNegativeDollars and c.acct['dollars'] < 0:
@@ -434,7 +417,7 @@ class IslandControl(GameControl.GameControl):
                 else:
                     amountRealized = amount
                 m['moneyShockAmount'] = amountRealized
-                c.events[self.matchNum][self.roundNum]\
+                c.events[self.matchNum][self.matchRoundNum]\
                         ['moneyShockAmountRealized_'+color+'Mkt']\
                         = amountRealized
             else:
@@ -464,9 +447,9 @@ class IslandControl(GameControl.GameControl):
                 self.updateRoundScore(c)
 
                 # Update client's event history
-                c.events[self.matchNum][self.roundNum]\
+                c.events[self.matchNum][self.matchRoundNum]\
                         ['productionChoice_green'] = pf[i][0]
-                c.events[self.matchNum][self.roundNum]\
+                c.events[self.matchNum][self.matchRoundNum]\
                         ['productionChoice_' + color] = pf[i][1]
 
                 m['green'] = pf[i][0]
@@ -634,7 +617,7 @@ class IslandControl(GameControl.GameControl):
         m = self.initParams[client.id]
         m['type'] = 'reinit'
         m['match'] = self.matchNum
-        m['round'] = self.roundNum
+        m['round'] = self.matchRoundNum
         m['matchInitMessage'] = client.matchInitMessage
         m['acct'] = client.acct
         m['events'] = client.events

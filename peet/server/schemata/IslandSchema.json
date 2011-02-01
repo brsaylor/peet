@@ -2,10 +2,10 @@
     "type": "object",
     "properties": {
         "numPlayers": {
-            "type": "number"
+            "type": "integer"
         },
         "numGroups": {
-            "type": "number",
+            "type": "integer",
             "description": "Number of groups"
         },
         "matches": {
@@ -14,7 +14,7 @@
                 "type": "object",
                 "properties": {
                     "numRounds": {
-                        "type": "number",
+                        "type": "integer",
                         "description": "Number of rounds in this match"
                     },
                     "enableChat": {
@@ -23,62 +23,62 @@
                         "default": "NO_CHAT"
                     },
                     "auctionTime": {
-                        "type": "number",
+                        "type": "integer",
                         "description": "Number of seconds for each auction"
                     },
                     "prodChoiceTimeLimit": {
-                        "type": "number",
+                        "type": "integer",
                         "description": "Time limit in seconds for the production choice"
                     },
                     "pf_blue_x": {
                         "type": "array",
                         "description": "Blue production function (green values)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "pf_blue_y": {
                         "type": "array",
                         "description": "Blue production function (blue values)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "pf_shock_blue_x": {
                         "type": "array",
                         "description": "Shocked Blue production function (green values)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "pf_shock_blue_y": {
                         "type": "array",
                         "description": "Shocked Blue production function (blue values)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "pf_red_x": {
                         "type": "array",
                         "description": "Red production function (green values)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "pf_red_y" : {
                         "type": "array",
                         "description": "Red production function (red values)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "pf_shock_red_x": {
                         "type": "array",
                         "description": "Shocked Red production function (green values)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "pf_shock_red_y": {
                         "type": "array",
                         "description": "Shocked Red production function (red values)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "pf_shockRounds_blue": {
                         "type": "array",
                         "description": "Rounds for blue production shock",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "pf_shockRounds_red": {
                         "type": "array",
                         "description": "Rounds for red production shock",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "startingDollars": {
                         "type": "number",
@@ -101,12 +101,12 @@
                     "moneyShocks_blueMkt_rounds": {
                         "type": "array",
                         "description": "The corresponding rounds",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "moneyShocks_blueMkt_who": {
                         "type": "array",
                         "description": "The corresponding targets (1 for blue teams only, 2 for red, 3 for both)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "moneyShocks_redMkt": {
                         "type": "array",
@@ -116,12 +116,12 @@
                     "moneyShocks_redMkt_rounds": {
                         "type": "array",
                         "description": "The corresponding rounds",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "moneyShocks_redMkt_who": {
                         "type": "array",
                         "description": "The corresponding targets (1 for blue teams only, 2 for red, 3 for both)",
-                        "items": { "type": "number" }
+                        "items": { "type": "integer" }
                     },
                     "allowNegativeDollars": {
                         "type": "boolean",

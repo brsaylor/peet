@@ -4,7 +4,10 @@
             "allowNegativeDollars": false, 
             "auctionTime": 10, 
             "enableChat": "NO_CHAT", 
-            "moneyShocks_blueMkt": [], 
+            "moneyShocks_blueMkt": [
+                123.40000000000001, 
+                1.0
+            ], 
             "moneyShocks_blueMkt_rounds": [], 
             "moneyShocks_blueMkt_who": [], 
             "moneyShocks_redMkt": [], 
@@ -12,28 +15,28 @@
             "moneyShocks_redMkt_who": [], 
             "numRounds": 2, 
             "pf_blue_x": [
-                0.0, 
-                1.0, 
-                2.0, 
-                3.0
+                0, 
+                1, 
+                2, 
+                3
             ], 
             "pf_blue_y": [
-                3.0, 
-                2.0, 
-                1.0, 
-                0.0
+                3, 
+                2, 
+                1, 
+                0
             ], 
             "pf_red_x": [
-                0.0, 
-                1.0, 
-                2.0, 
-                3.0
+                0, 
+                1, 
+                2, 
+                3
             ], 
             "pf_red_y": [
-                3.0, 
-                2.0, 
-                1.0, 
-                0.0
+                3, 
+                2, 
+                1, 
+                0
             ], 
             "pf_shockRounds_blue": [], 
             "pf_shockRounds_red": [], 
@@ -44,14 +47,14 @@
             "prodChoiceTimeLimit": 30, 
             "resetBalances": false, 
             "scoring_formula": "min(b, r, g)", 
-            "startingDollars": 10
+            "startingDollars": 10.0
         }, 
         {
             "allowNegativeDollars": false, 
             "auctionTime": 45, 
             "enableChat": "OPEN_CHAT", 
             "moneyShocks_blueMkt": [
-                10
+                10.0
             ], 
             "moneyShocks_blueMkt_rounds": [
                 2
@@ -88,7 +91,7 @@
             "prodChoiceTimeLimit": 20, 
             "resetBalances": true, 
             "scoring_formula": "d + 10 * (min(b, r, g))", 
-            "startingDollars": 1
+            "startingDollars": 1.0
         }
     ], 
     "numGroups": 1, 

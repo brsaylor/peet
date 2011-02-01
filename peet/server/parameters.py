@@ -88,7 +88,7 @@ JSONTypeMap = {
 # not supplied by the schema.
 JSONDefaults = {
         'string': "",
-        'number': 1,
+        'number': 1.0,
         'integer': 1,
         'boolean': True,
         'object': {},

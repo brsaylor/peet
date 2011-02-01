@@ -1,6 +1,6 @@
 {
     "type": "object",
     "properties": {
-        "numPlayers": { "type": "number" }
+        "numPlayers": { "type": "integer" }
     }
 }

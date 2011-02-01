@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import re
 from peet.server import parameters
 import wx
 import wx.lib.agw.hypertreelist as HTL
@@ -72,7 +73,8 @@ class TreeEditor(wx.Dialog):
         mainSizer.Add(editorSizer, 1, flag=wx.EXPAND)
 
         # Create the image list for type icons
-        self.typeNames = ['object', 'array', 'number', 'string', 'boolean'] 
+        self.typeNames = ['object', 'array', 'number', 'integer', 'string',\
+                'boolean'] 
         imageList = wx.ImageList(16, 16, True, len(self.typeNames))
         for name in self.typeNames:
             fname = os.path.join(os.path.dirname(__file__), 'icons',\
@@ -92,8 +94,10 @@ class TreeEditor(wx.Dialog):
         self._tree.GetMainWindow().Bind(wx.EVT_LEFT_DOWN, self._onLeftDown)
         self._tree.GetMainWindow().Bind(wx.EVT_LEFT_UP, self._onLeftUp)
         self._tree.GetMainWindow().Bind(wx.EVT_RIGHT_DOWN, self._onRightDown)
+        self._tree.GetMainWindow().Bind(wx.EVT_RIGHT_DOWN, self._onRightDown)
         self.Bind(wx.EVT_TREE_BEGIN_DRAG, self._onBeginDrag, self._tree)
         self.Bind(wx.EVT_TREE_END_DRAG, self._onEndDrag, self._tree)
+        self.Bind(wx.EVT_TREE_END_LABEL_EDIT, self._onEndLabelEdit, self._tree)
 
         self._tree.GetMainWindow().Bind(wx.EVT_TREE_ITEM_GETTOOLTIP,\
                 self._onGetToolTip)
@@ -340,10 +344,10 @@ class TreeEditor(wx.Dialog):
     def _getItemValue(self, item):
         """ Return the data value represented by item, recursively including any
         subitems. """
-        itemData = self._tree.GetItemPyData(item)
+        schema = self._tree.GetItemPyData(item)['schema']
 
         # If item represents a collection, get value recursively
-        if itemData['type'] == dict:
+        if schema['type'] == 'object':
             value = {}
             (child, cookie) = self._tree.GetFirstChild(item)
             while child:
@@ -351,7 +355,7 @@ class TreeEditor(wx.Dialog):
                 childValue = self._getItemValue(child)
                 value[childKey] = childValue
                 (child, cookie) = self._tree.GetNextChild(item, cookie)
-        elif itemData['type'] == list:
+        elif schema['type'] == 'array':
             value = []
             (child, cookie) = self._tree.GetFirstChild(item)
             while child:
@@ -359,54 +363,38 @@ class TreeEditor(wx.Dialog):
                 (child, cookie) = self._tree.GetNextChild(item, cookie)
 
         # Item is not a collection - return its single value
-        elif itemData['type'] == bool:
+        elif schema['type'] == 'boolean':
             value = (self._tree.GetItemText(item, 1) == 'True')
         else:
-            # Will be a number of a string; cast directly to original type.
-            value = itemData['type'](self._tree.GetItemText(item, 1))
+            # Will be a number or a string; cast directly to original type.
+            pyType = parameters.JSONTypeMap[schema['type']]
+            value = pyType(self._tree.GetItemText(item, 1))
 
         return value
 
     def _setItemValue(self, item, value):
         """ Set the value of the given tree item.  If the value is a dict or a
         list, recursively create subitems and set their values.  Assumes that
-        the schema for the item has already been set. """
+        the schema for the item has already been set, and that the value is of
+        the type specified in the schema (mapped from JSON Schema type to Python
+        type; see parameters.JSONTypeMap). """
 
-        # Default type translations of json module:
-        #
-        # JSON	        Python
-        # object	    dict
-        # array	        list
-        # string	    unicode
-        # number (int)	int, long
-        # number (real)	float
-        # true	        True
-        # false	        False
-        # null	        None
-
-        itemData = self._tree.GetItemPyData(item)
-        itemData['type'] = type(value)
-        self._tree.SetItemPyData(item, itemData)
+        schema = self._tree.GetItemPyData(item)['schema']
 
         # If the value is a collection, delete the item's existing children,
         # then recursively set values for its elements
-        if isinstance(value, dict):
-            collection = True
+        if schema['type'] == 'object':
             self._tree.DeleteChildren(item)
-            typeName = 'object'
             for k, v in sorted(value.items()):
                 child = self._tree.AppendItem(item, k)
-                childSchema = itemData['schema']\
-                        .get('properties', {}).get(k, None)
+                childSchema = schema.get('properties', {}).get(k, None)
                 self._tree.SetItemPyData(child, {'schema': childSchema})
                 self._setItemValue(child, v)
-        elif isinstance(value, list):
-            collection = True
+        elif schema['type'] == 'array':
             self._tree.DeleteChildren(item)
-            typeName = 'array'
             # FIXME: Allow the possibility that 'items' is an array of schemas
             # rather than a single schema
-            childSchema = itemData['schema'].get('items')
+            childSchema = schema.get('items')
             for k, v in enumerate(value):
                 child = self._tree.AppendItem(item, str(k+1))
                 self._tree.SetItemPyData(child, {'schema': childSchema})
@@ -414,19 +402,9 @@ class TreeEditor(wx.Dialog):
 
         else:
             # The value is not a collection - we've reached a leaf in the tree
-            collection = False
-
-            if isinstance(value, bool):
-                typeName = 'boolean'
-            elif isinstance(value, int) or isinstance(value, long)\
-                    or isinstance(value, float):
-                typeName = 'number'
-            elif isinstance(value, unicode):
-                typeName = 'string'
-
             self._tree.SetItemText(item, str(value), 1)
 
-        self._setItemImage(item, typeName)
+        self._setItemImage(item, schema['type'])
 
     def _onLeftDown(self, event):
         pos = event.GetPosition()
@@ -438,8 +416,7 @@ class TreeEditor(wx.Dialog):
 
         self.currentItem = item
         self._tree.SelectItem(self.currentItem)
-        itemData = self._tree.GetItemPyData(item)
-        itemType = itemData['type']
+        schema = self._tree.GetItemPyData(item)['schema']
 
         if col == 0 and (flags & wx.TREE_HITTEST_ONITEMLABEL):
             # Clicked on label in the Key column - pop up a menu with operations
@@ -448,13 +425,13 @@ class TreeEditor(wx.Dialog):
         
             menu = wx.Menu()
 
-            if itemType == dict:
+            if schema['type'] == 'object':
                 # Create a submenu for adding the properties included in the
                 # item's schema.
                 submenu = wx.Menu()
                 itemValue = self._getItemValue(item)
                 for propName, propSchema in sorted(\
-                        itemData['schema']['properties'].items()):
+                        schema['properties'].items()):
                     menuItem = submenu.Append(wx.NewId(), propName,\
                             propSchema.get('description', 'No description'))
                     self.Bind(wx.EVT_MENU, self._onAddPropertyClicked, menuItem)
@@ -463,7 +440,7 @@ class TreeEditor(wx.Dialog):
                         menuItem.Enable(False)
 
                 menu.AppendMenu(wx.ID_ANY, "Add Property", submenu)
-            if itemType == list:
+            if schema['type'] == 'array':
                 menuItem = menu.Append(wx.ID_ANY, "Append Item")
                 self.Bind(wx.EVT_MENU, self._onAppendItemClicked, menuItem)
                 menuItem = menu.Append(wx.ID_ANY, "Paste Items")
@@ -484,7 +461,7 @@ class TreeEditor(wx.Dialog):
             # assuming user is going to modify a value
             self._setModified(True)
 
-            if itemType == bool:
+            if schema['type'] == 'boolean':
                 menu = wx.Menu()
                 for value in ('True', 'False'):
                     menuItem = menu.Append(wx.NewId(), value)
@@ -492,18 +469,18 @@ class TreeEditor(wx.Dialog):
                 self._tree.PopupMenu(menu)
                 menu.Destroy()
 
-            elif itemData['schema'].has_key('enum'):
+            elif schema.has_key('enum'):
                 # item has a set of possible values to be select from a
                 # drop-down menu
 
                 menu = wx.Menu()
-                for value in itemData['schema']['enum']:
+                for value in schema['enum']:
                     menuItem = menu.Append(wx.NewId(), str(value))
                     self.Bind(wx.EVT_MENU, self._onEnumValueSelected, menuItem)
                 self._tree.PopupMenu(menu)
                 menu.Destroy()
 
-            elif not (itemType == dict or itemType == list):
+            elif not (schema['type'] == 'object' or schema['type'] == 'array'):
                 # item has a value editable in a text box
                 self._tree.EditLabel(item, 1)
                 wx.CallAfter(self._tree.GetEditControl().SetFocus)
@@ -536,7 +513,8 @@ class TreeEditor(wx.Dialog):
         # For now, only allow dragging if the source and destination items share
         # the same parent and that parent represents an array.
         parentItem = self._tree.GetItemParent(draggedItem)
-        if self._tree.GetItemPyData(parentItem)['type'] == list\
+        parentSchema = self._tree.GetItemPyData(parentItem)['schema']
+        if parentSchema['type'] == 'array'\
                 and parentItem == self._tree.GetItemParent(targetItem):
             # The TreeCtrl family doesn't support moving items: have to copy and
             # delete.
@@ -563,6 +541,34 @@ class TreeEditor(wx.Dialog):
         else:
             event.Skip()
 
+    def _onEndLabelEdit(self, event):
+        item = event.GetItem()
+        # Item still has old value at this moment; have to use CallAfter to
+        # access the new value for validation.
+        wx.CallAfter(self._validateItem, item)
+
+    def _validateItem(self, item):
+        """ For now, all this does is force the item's value to a valid integer
+        or float, if that's what it's supposed to be. """
+        schema = self._tree.GetItemPyData(item)['schema']
+        text = self._tree.GetItemText(item, 1)
+        if schema['type'] == 'integer':
+            # Remove the first non-digit character and everything that follows
+            validText = re.sub('[^0-9].*$', '', text)
+            if validText == '': validText = '0'
+            self._setItemValue(item, int(validText))
+        elif schema['type'] == 'number':
+            # Search the string for the first valid number and use that; or 0 if
+            # not found.
+            matches = re.findall('[0-9]*\.?[0-9]*', text)
+            validText = '0.0'
+            for m in matches:
+                if m != '':
+                    validText = m
+                    break
+            self._setItemValue(item, float(validText))
+
+
     def _onEnumValueSelected(self, event):
         """ Called when the user selects a value from the menu that appears when
         editing a variable with a fixed set of possible values. """
@@ -570,11 +576,12 @@ class TreeEditor(wx.Dialog):
         menu = event.GetEventObject()
         menuItem = menu.FindItemById(event.GetId())
 
-        itemType = self._tree.GetItemPyData(self.currentItem)['type']
-        if itemType == bool:
+        schema = self._tree.GetItemPyData(self.currentItem)['schema']
+        if schema['type'] == 'boolean':
             value = (menuItem.GetItemLabelText() == 'True')
         else:
-            value = itemType(menuItem.GetItemLabelText())
+            value = parameters.JSONTypeMap[schema['type']](\
+                    menuItem.GetItemLabelText())
 
         self._setItemValue(self.currentItem, value)
 
@@ -732,9 +739,3 @@ class TreeEditor(wx.Dialog):
         for state in [wx.TreeItemIcon_Normal, wx.TreeItemIcon_Selected,\
                 wx.TreeItemIcon_Expanded, wx.TreeItemIcon_SelectedExpanded]:
             self._tree.SetItemImage(item, imageIndex, which=state)
-
-    def _itemIsCollection(self, item):
-        """ Return True if the item represents a collection (i.e. object/dict or
-        array/list) """
-        t = self._tree.GetItemPyData(item)['type']
-        return (t == dict or t == list)

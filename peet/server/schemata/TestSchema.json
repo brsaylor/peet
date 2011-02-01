@@ -3,12 +3,12 @@
     "properties": {
         "numPlayers": {
             "description": "Number of players",
-            "type": "number",
+            "type": "integer",
             "default": 1
         },
         "numRounds": {
             "description": "Number of rounds",
-            "type": "number",
+            "type": "integer",
             "default": 10
         },
         "showUpPayment": {

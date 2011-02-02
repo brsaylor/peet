@@ -54,6 +54,7 @@ class TreeEditor(wx.Dialog):
                 style=wx.TR_DEFAULT_STYLE\
                 #|wx.TR_MULTIPLE\
                 |wx.TR_FULL_ROW_HIGHLIGHT\
+                |wx.TR_ROW_LINES\
                 ^wx.TR_NO_LINES) # doesn't work
         self._tree.AddColumn("Key")
         self._tree.AddColumn("Value")

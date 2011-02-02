@@ -115,6 +115,11 @@ class TreeEditor(wx.Dialog):
         self._setItemValue(item, params)
         self._tree.ExpandAll()
 
+        # Automatically adjust width when items are expanded
+        self._tree.GetMainWindow().Bind(wx.EVT_TREE_ITEM_EXPANDED,\
+                self._onItemExpanded)
+        wx.CallAfter(self._onItemExpanded, None)
+
         self.setFilename(filename)
 
     def getParams(self):
@@ -605,7 +610,7 @@ class TreeEditor(wx.Dialog):
 
         self._tree.OnCompareItems = self._onCompareItems_alpha
         self._tree.SortChildren(self.currentItem)
-        self._tree.ExpandAllChildren(self.currentItem)
+        self._tree.Expand(self.currentItem)
 
         self._setModified()
 
@@ -625,7 +630,7 @@ class TreeEditor(wx.Dialog):
 
         self._tree.OnCompareItems = self._onCompareItems_numeric
         self._tree.SortChildren(self.currentItem)
-        self._tree.ExpandAllChildren(self.currentItem)
+        self._tree.Expand(self.currentItem)
 
         self._setModified()
 
@@ -740,3 +745,29 @@ class TreeEditor(wx.Dialog):
         for state in [wx.TreeItemIcon_Normal, wx.TreeItemIcon_Selected,\
                 wx.TreeItemIcon_Expanded, wx.TreeItemIcon_SelectedExpanded]:
             self._tree.SetItemImage(item, imageIndex, which=state)
+
+    def _onItemExpanded(self, event):
+        print "_onItemExpanded"
+        """ When an item is expanded, auto-adjust the column widths. """
+        numCols = self._tree.GetMainWindow().GetColumnCount()
+
+        # Store original column widths
+        origWidths = []
+        for i in range(numCols):
+            origWidths.append(self._tree.GetColumnWidth(i))
+
+        # Tell the tree to automatically size the columns, but prevent them from
+        # shrinking.
+        for i in range(numCols):
+            self._tree.SetColumnWidth(i, wx.LIST_AUTOSIZE)
+            if self._tree.GetColumnWidth(i) < origWidths[i]:
+                self._tree.SetColumnWidth(i, origWidths[i])
+
+        # Resize the tree and window so that it doesn't require horizontal
+        # scrolling
+        virtualSize = self._tree.GetMainWindow().GetVirtualSize()
+        self._tree.SetBestSize((virtualSize[0], -1))
+        self.SetSize((self.GetBestSize()[0], -1))
+        self.GetSizer().Layout()
+
+        # FIXME: This still leaves a horizontal scrollbar.

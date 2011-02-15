@@ -191,17 +191,24 @@ class Frame(wx.Frame):
         # Get command line options
         self.autostart = False
         try:
-            opts, args = getopt.getopt(sys.argv[1:], "p:o:a",
-                    ["paramfile=", "outdir=", "autostart"])
+            opts, args = getopt.getopt(sys.argv[1:], "g:p:o:a",
+                    ["game=", "paramfile=", "outdir=", "autostart"])
         except getopt.GetoptError, err:
             # print help information and exit:
             print str(err)
             self.usage()
             sys.exit(2)
         for o, a in opts:
-            if o in ('-p', '--paramfile'):
+            if o in ('-g', '--game'):
+                className = a + 'Control'
+                for k, v in self.controlClassesByName.iteritems():
+                    if v.__name__ == className:
+                        self.setControlClass(v)
+                        self.gameChooser.SetStringSelection(k)
+                        break
+            elif o in ('-p', '--paramfile'):
                 filename = os.path.abspath(a)
-                self.setParams(parameters.getParamsFromFile(filename), filename)
+                self.setParams(json.load(open(filename)), filename)
             elif o in ('-o', '--outdir'):
                 self.outputDir = os.path.abspath(a)
                 self.outputDirText.SetLabel("Output Folder: " + self.outputDir)
@@ -224,6 +231,7 @@ class Frame(wx.Frame):
     def usage(self):
         print """
             Command line options:
+                --game, -g <game>  where <game> is the game class prefix
                 --paramfile, -p <filename>
                 --outdir, -o <directory name>
                 --autostart, -a  Automatically connect and start game
@@ -394,14 +402,14 @@ class Frame(wx.Frame):
         self.communicator.send(clientConn, {'type': 'whoareyou',
             'disconnectedClients': disconnectedClients})
 
-    def onGameSelected(self, event):
-        """ Called when a game type is selected from the wx.Choice menu. """
-        if self.gameChooser.GetSelection() == 0:
-            self.controlClass = None
+    def setControlClass(self, controlClass):
+        """ Set the controller class to the given class and try to load the
+        associated schema, enabling the parameter buttons if successful. """
+        if controlClass == None:
             self.schema = None
             enableParamButtons = False
         else:
-            self.controlClass = self.controlClassesByName[event.GetString()]
+            self.controlClass = controlClass
             if not self.loadSchema():
                 self.controlClass = None
                 enableParamButtons = False
@@ -413,6 +421,13 @@ class Frame(wx.Frame):
         self.newButton.Enable(enableParamButtons)
         self.openButton.Enable(enableParamButtons)
         self.editButton.Enable(enableParamButtons)
+
+    def onGameSelected(self, event):
+        """ Called when a game type is selected from the wx.Choice menu. """
+        if self.gameChooser.GetSelection() == 0:
+            self.setControlClass(None)
+        else:
+            self.setControlClass(self.controlClassesByName[event.GetString()])
 
     def onNewClicked(self, event):
         editor = TreeEditor.TreeEditor(self, self.schema)

@@ -31,8 +31,7 @@ class GameGUI(wx.Frame):
     self.panel, not self. """
 
     def __init__(self, communicator, initParams):
-        title = 'Game Interface  (' + initParams['name'] + ', id ' +\
-                str(initParams['id']) + ')'
+        title = initParams['name'] + ' (ID ' + str(initParams['id'] + 1) + ')'
         style = wx.CAPTION | wx.CLIP_CHILDREN # | wx.RESIZE_BORDER
         wx.Frame.__init__(self, None, wx.ID_ANY, title, style=style)
 

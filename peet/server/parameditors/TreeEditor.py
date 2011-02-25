@@ -62,6 +62,8 @@ class TreeEditor(wx.Dialog):
         self._tree.SetColumnWidth(0, 200)
         #self._tree.SetColumnEditable(1, True)
 
+        self._tree.OnCompareItems = self._onCompareItems
+
         editorSizer.Add(self._tree, 1, flag=wx.EXPAND)
 
         # Create the parameter info pane
@@ -398,12 +400,19 @@ class TreeEditor(wx.Dialog):
                 self._setItemValue(child, v)
         elif schema['type'] == 'array':
             self._tree.DeleteChildren(item)
+
             # FIXME: Allow the possibility that 'items' is an array of schemas
             # rather than a single schema
+
+            # Allows showing a more informative label in the Key column than
+            # just the element's index.
+            thisKey = self._tree.GetItemText(item, 0)
+
             childSchema = schema.get('items')
             for k, v in enumerate(value):
-                child = self._tree.AppendItem(item, str(k+1))
-                self._tree.SetItemPyData(child, {'schema': childSchema})
+                child = self._tree.AppendItem(item, "%s[%d]" % (thisKey, k+1))
+                self._tree.SetItemPyData(child, {'schema': childSchema,\
+                        'index': k})
                 self._setItemValue(child, v)
 
         else:
@@ -608,27 +617,33 @@ class TreeEditor(wx.Dialog):
         # Initialize the new item with the default value
         self._setItemValue(child, parameters.getDefault(childSchema))
 
-        self._tree.OnCompareItems = self._onCompareItems_alpha
         self._tree.SortChildren(self.currentItem)
         self._tree.Expand(self.currentItem)
 
         self._setModified()
 
     def _onAppendItemClicked(self, event):
+        """ Called when the user clicks on the option to append an item to an
+        array. """
+
+        # Include the parent name in the key text for the child item, since this
+        # makes array items more readable.
+        parentName = self._tree.GetItemText(self.currentItem)
+
         lastChild = self._tree.GetLastChild(self.currentItem)
         if lastChild:
-            lastNum = int(self._tree.GetItemText(lastChild))
+            index = self._tree.GetItemPyData(lastChild)['index'] + 1
         else:
-            lastNum = 0
-        child = self._tree.AppendItem(self.currentItem, str(lastNum+1))
+            index = 0
+        child = self._tree.AppendItem(self.currentItem,\
+                "%s[%d]" % (parentName, index+1))
         currentItemSchema = self._tree.GetItemPyData(self.currentItem)['schema']
         childSchema = currentItemSchema['items']
-        self._tree.SetItemPyData(child, {'schema': childSchema})
+        self._tree.SetItemPyData(child, {'schema': childSchema, 'index': index})
 
         # Initialize the new item with the default value
         self._setItemValue(child, parameters.getDefault(childSchema))
 
-        self._tree.OnCompareItems = self._onCompareItems_numeric
         self._tree.SortChildren(self.currentItem)
         self._tree.Expand(self.currentItem)
 
@@ -675,13 +690,20 @@ class TreeEditor(wx.Dialog):
                                wx.OK | wx.CANCEL | wx.ICON_QUESTION
                                )
         if dlg.ShowModal() == wx.ID_OK:
+            parent = self._tree.GetItemParent(self.currentItem)
             self._tree.Delete(self.currentItem)
+            parentData = self._tree.GetItemPyData(parent)
+            if parentData['schema']['type'] == 'array':
+                self._renumberList(parent)
             self._setModified()
         dlg.Destroy()
 
     def _onGetToolTip(self, event):
         item = event.GetItem()
-        schema = self._tree.GetItemPyData(item)['schema']
+        itemData = self._tree.GetItemPyData(item)
+        schema = itemData['schema']
+        index = itemData.get('index')
+        print index
 
         # Get the keys of this item and its ancestors
         pathKeys = []
@@ -708,30 +730,39 @@ class TreeEditor(wx.Dialog):
         """ Called when the mouse moves over a menu item. """
         print 'onMenuHighlight'
 
-    def _onCompareItems_alpha(self, item1, item2):
+    def _onCompareItems(self, item1, item2):
         """ This function is assigned to tree.OnCompareItems as a kludgy way of
         overriding it. """
-        text1 = self._tree.GetItemText(item1)
-        text2 = self._tree.GetItemText(item2)
-        if text1 == text2:
-            return 0
-        elif text1 < text2:
-            return -1
-        else:
-            return 1
 
-    def _onCompareItems_numeric(self, item1, item2):
-        return int(self._tree.GetItemText(item1))\
-                - int(self._tree.GetItemText(item2))
+        # If both items represent array elements, compare their indices (stored
+        # in their ItemPyData).  Otherwise, compare the text in the key column.
+        data1 = self._tree.GetItemPyData(item1)
+        if data1.has_key('index'):
+            data2 = self._tree.GetItemPyData(item2)
+            if data2.has_key('index'):
+                return data1['index'] - data2['index']
+        else:
+            text1 = self._tree.GetItemText(item1)
+            text2 = self._tree.GetItemText(item2)
+            if text1 == text2:
+                return 0
+            elif text1 < text2:
+                return -1
+            else:
+                return 1
 
     def _renumberList(self, item):
         """ Given a TreeItem representing a list, sequentially renumber the
-        indices shown in the Key column for its children.  Note: we count array
-        indices from 1. """
-        i = 1
+        indices shown in the Key column for its children.  Note: we display
+        array indices from 1. """
+        i = 0
+        thisKey = self._tree.GetItemText(item)
         (child, cookie) = self._tree.GetFirstChild(item)
         while child:
-            self._tree.SetItemText(child, str(i), 0)
+            childData = self._tree.GetItemPyData(child)
+            childData['index'] = i
+            self._tree.SetItemPyData(child, childData)
+            self._tree.SetItemText(child, "%s[%d]" % (thisKey, i+1), 0)
             (child, cookie) = self._tree.GetNextChild(item, cookie)
             i += 1
 

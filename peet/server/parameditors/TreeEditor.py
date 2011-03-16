@@ -392,6 +392,13 @@ class TreeEditor(wx.Dialog):
         # If the value is a collection, delete the item's existing children,
         # then recursively set values for its elements
         if schema['type'] == 'object':
+
+            # Update the object's properties with default values for any missing
+            # properties required by the schema.
+            for propName, propSchema in schema.get('properties', {}).items():
+                if propSchema.get('required') and not value.has_key(propName):
+                    value[propName] = parameters.getDefault(propSchema)
+
             self._tree.DeleteChildren(item)
             for k, v in sorted(value.items()):
                 child = self._tree.AppendItem(item, k)
@@ -461,7 +468,10 @@ class TreeEditor(wx.Dialog):
                 menuItem = menu.Append(wx.ID_ANY, "Paste Items")
                 self.Bind(wx.EVT_MENU, self._onPasteItemsClicked, menuItem)
 
-            if not item == self._tree.GetRootItem():
+            # Create a "Delete" menu entry unless it's the root item or it's a
+            # required property.
+            if not item == self._tree.GetRootItem()\
+                    and not schema.get('required'):
                 menuItem = menu.Append(wx.ID_ANY, "Delete Item")
                 self.Bind(wx.EVT_MENU, self._onDeleteItemClicked, menuItem)
 
@@ -703,7 +713,6 @@ class TreeEditor(wx.Dialog):
         itemData = self._tree.GetItemPyData(item)
         schema = itemData['schema']
         index = itemData.get('index')
-        print index
 
         # Get the keys of this item and its ancestors
         pathKeys = []
@@ -719,7 +728,9 @@ class TreeEditor(wx.Dialog):
         for i, key in enumerate(pathKeys):
             text += '  ' * i  # indent
             text += key + '\n'
-        text += '\n' + 'Type: ' + schema['type'] + '\n'
+        text += '\n' + 'Type: ' + schema['type']
+        text += '\n' + 'Required: ' +\
+                ('Yes' if schema.get('required') else 'No') + '\n'
         text += '\n' + schema.get('description', 'No description')
 
         self._infoPane.SetValue(text)

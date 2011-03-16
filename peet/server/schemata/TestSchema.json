@@ -4,12 +4,14 @@
         "numPlayers": {
             "description": "Number of players",
             "type": "integer",
-            "default": 1
+            "default": 1,
+            "required": true
         },
         "numRounds": {
             "description": "Number of rounds",
             "type": "integer",
-            "default": 10
+            "default": 10,
+            "required": true
         },
         "showUpPayment": {
             "type": "number",

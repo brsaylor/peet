@@ -464,7 +464,7 @@ class Frame(wx.Frame):
 
     def onOutputDirClicked(self, event):
         # get output directory
-        defaultDir = os.path.join(os.path.dirname(__file__), 'server/output')
+        defaultDir = os.path.join(os.path.dirname(__file__), 'output')
         dlg = wx.DirDialog(self, "Choose a folder for output files",\
                 defaultPath=defaultDir)
         if dlg.ShowModal() == wx.ID_OK:

@@ -99,6 +99,10 @@ class GameControl:
         say they are ready for the next round."""
         pass
 
+    def onPause(self):
+        """ Called by the server when the game has been paused."""
+        pass
+
     def onUnpause(self):
         """ Called by the server when the game has been unpaused.  Override this
         method if you need something in particular to happen here.  If there was

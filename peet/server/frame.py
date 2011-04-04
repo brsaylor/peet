@@ -747,6 +747,7 @@ class Frame(wx.Frame):
             self.pauseButton.SetLabel("Pause")
         else:
             self.communicator.pause()
+            self.gameController.onPause()
             self.pauseClients()
             self.pauseButton.SetLabel("Unpause")
     

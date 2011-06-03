@@ -25,6 +25,8 @@ import wx.lib.newevent
 from peet.client import clientnet
 from peet.client.gameinterfaces import GameGUI
 
+reconnectNote = "Note: You do not need to enter your name to reconnect."
+
 class LoginWindow(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(self, parent, wx.ID_ANY, "Client Login",
@@ -46,15 +48,15 @@ class LoginWindow(wx.Frame):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(sizer)
-        prompt = wx.StaticText(self.panel, wx.ID_STATIC, "Please enter your name:")
+        prompt = wx.StaticText(self.panel, wx.ID_STATIC,
+                "Please enter your name:")
         prompt.SetFont(wx.Font(18, wx.FONTFAMILY_ROMAN,
                                wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
         sizer.Add(prompt, 0, wx.ALIGN_CENTER)
         self.loginField = wx.TextCtrl(self.panel, size=(300,-1),\
                 style=wx.TE_PROCESS_ENTER)
         sizer.Add(self.loginField, 0, wx.ALIGN_CENTER)
-        self.note = wx.StaticText(self.panel, wx.ID_STATIC,
-                "Note: You do not need to enter your name to reconnect.")
+        self.note = wx.StaticText(self.panel, wx.ID_STATIC, reconnectNote)
         notefont = self.note.GetFont()
         notefont.SetStyle(wx.FONTSTYLE_ITALIC)
         self.note.SetFont(notefont)
@@ -114,21 +116,16 @@ class LoginWindow(wx.Frame):
     def onLoginClicked(self, event):
         # Button clicked or Enter pressed
         
-        # Ignore if no named entered
-        if self.loginField.GetValue() == '':
-            return
-
         self.loginField.Enable(False)
         self.loginButton.Enable(False)
         self.reconnectButton.Enable(False)
         self.note.SetLabel('Please wait - connecting to server...')
-        self.communicator.connectToServer(self.loginField.GetValue())
+        self.communicator.connectToServer()
 
     def reconnectClicked(self, event):
-        self.loginField.Enable(False)
-        self.loginButton.Enable(False)
-        self.reconnectButton.Enable(False)
-        self.communicator.reconnectToServer()
+        # Reconnecting is the same as connecting.
+        # At this point, only the server knows the difference.
+        self.onLoginClicked(event)
 
     def postNetworkEvent(self, message):
         """ called by the Communicator when something happens """
@@ -142,7 +139,11 @@ class LoginWindow(wx.Frame):
         if message['type'] == 'init' or message['type'] == 'reinit':
             self.startGUI(message)
 
-        elif message['type'] == 'whoareyou':
+        elif message['type'] == 'loginPrompt':
+            self.communicator.send({'type': 'login',
+                'name': self.loginField.GetValue()})
+
+        elif message['type'] == 'reloginPrompt':
             # Server sends this message asking for re-login after reconnection.
             # disconnectedClients is a list of tuples (id, name).
             disconnectedClients = message['disconnectedClients']
@@ -161,6 +162,23 @@ class LoginWindow(wx.Frame):
                 # FIXME  User pressed Cancel.  What does that mean?
                 pass
             dlg.Destroy()
+
+        elif message['type'] == 'error':
+            # Display error message sent by server
+            dlg = wx.MessageDialog(self, message['errorString'],
+                    'Error', wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+        elif message['type'] == 'disconnect':
+            self.reset()
+
+    def reset(self):
+        """ Start over as if the program were just started. """
+        self.loginField.Enable()
+        self.loginButton.Enable(self.loginField.GetValue() != '')
+        self.reconnectButton.Enable()
+        self.note.SetLabel(reconnectNote)
 
     def startGUI(self, initParams):
         className = initParams['GUIclass']

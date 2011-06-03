@@ -43,11 +43,10 @@ class Communicator:
         self.address = address
         self.port = port
         self.postEvent = postEvent
+        self.sock = None
+
+    def connectToServer(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def connectToServer(self, loginName):
-
-        self.loginName = loginName
 
         def run():
             connected = False
@@ -56,7 +55,8 @@ class Communicator:
                     self.sock.connect((self.address, self.port))
                     connected = True
                 except:
-                    #print "Couldn't connect, retrying in 1 second"
+                    print "Couldn't connect, retrying in 1 second - "\
+                            + str(sys.exc_info()[1])
                     time.sleep(1)
 
             self.postEvent({'type': 'connect'})
@@ -64,28 +64,6 @@ class Communicator:
             self.senderThread.Start()
             self.listenerThread = ListenerThread(self)
             self.listenerThread.Start()
-            self.send({'type': 'login', 'name': loginName})
-
-        thread.start_new_thread(run, ())
-
-    def reconnectToServer(self):
-        # FIXME: since this is mostly the same as connectToServer(), it would be
-        # better to combine them.
-
-        # FIXME: At some point, need to set self.loginName
-
-        def run():
-            try:
-                self.sock.connect((self.address, self.port))
-            except:
-                print "failed to connect: ", sys.exc_info()[0]
-                raise
-            else:
-                self.postEvent({'type': 'reconnect'})
-                self.senderThread = network.SenderThread(self.sock)
-                self.senderThread.Start()
-                self.listenerThread = ListenerThread(self)
-                self.listenerThread.Start()
 
         thread.start_new_thread(run, ())
 

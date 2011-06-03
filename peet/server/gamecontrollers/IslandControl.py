@@ -185,7 +185,7 @@ class IslandControl(GameControl.GameControl):
 
         self.resetBalances = mp['resetBalances']
         self.startingDollars =\
-                Decimal(mp['startingDollars']).quantize(Decimal('0.01'))
+                Decimal(str(mp['startingDollars'])).quantize(Decimal('0.01'))
         self.scoring_formula = mp['scoring_formula']
 
         # dictionaries indexed by color of market
@@ -195,7 +195,7 @@ class IslandControl(GameControl.GameControl):
         self.moneyShocks_who = {}
         for color in ('blue', 'red'):
             self.moneyShocks[color] = map(
-                    lambda x: Decimal(x).quantize(Decimal('0.01')),
+                    lambda x: Decimal(str(x)).quantize(Decimal('0.01')),
                     mp['moneyShocks_'+color+'Mkt'])
             self.moneyShocks_rounds[color] = map(lambda x: int(x) - 1,
                     mp['moneyShocks_'+color+'Mkt_rounds'])

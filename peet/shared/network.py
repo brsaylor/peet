@@ -49,6 +49,7 @@ import sys
 import socket
 import thread
 import Queue
+import traceback
 #import pickle
 import cerealizer
 
@@ -129,7 +130,6 @@ class SenderThread:
         """
         self.sock = sock
         self.msgQueue = Queue.Queue()
-        self.keepSending = True
         self.qtimeout = ping_interval if send_pings else None
 
 
@@ -140,6 +140,10 @@ class SenderThread:
         """
         thread.start_new_thread(self.Run, ())
 
+    def Stop(self):
+        """ Stop the thread (causes the Run function to terminate). """
+        self.msgQueue.put(None)
+
     def Run(self):
         """
         The program body for the thread.  This is not called
@@ -147,13 +151,16 @@ class SenderThread:
         member.
         """
 
-        while self.keepSending:
+        while True:
             # Wait at most self.qtimeout seconds for a new message to send
             # before sending a ping to let the other end know we're still
             # connected.
             try:
                 # Queue.get([block[, timeout]])
                 data = self.msgQueue.get(True, self.qtimeout)
+                if data == None:
+                    print "SenderThread: Stop() called, terminating"
+                    break
             except Queue.Empty:
                 data = cerealizer.dumps({'type': 'ping'})
 
@@ -161,8 +168,7 @@ class SenderThread:
                 sendmessage(self.sock, data)
             except:
                 print "SenderThread: caught exception, terminating: "
-                print "    ", sys.exc_info()
-                self.keepSending = False
+                traceback.print_exc(file=sys.stdout)
                 break
 
     def send(self, message):

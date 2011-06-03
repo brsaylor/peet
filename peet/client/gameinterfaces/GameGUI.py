@@ -95,7 +95,10 @@ class GameGUI(wx.Frame):
         if mes['type'] == 'chat':
             self.chatBox.AppendText(self.makeChatString(mes, mes['id']))
         elif mes['type'] == 'disconnect':
+            print 'GameGUI received disconnect message'
             self.Destroy()
+            # Not sure why Destroy() doesn't end the process
+            exit(0)
         elif mes['type'] == 'endOfExperiment':
             self.showEndOfExperimentMes(mes)
 

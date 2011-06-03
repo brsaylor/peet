@@ -39,6 +39,9 @@ class TestControl(GameControl):
 
         self.server.enableChat()
 
+    def getNumPlayers(self):
+        return self.params['numPlayers']
+
     def getRounding(self):
         return self.params['rounding']
     

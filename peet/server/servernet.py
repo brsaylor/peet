@@ -66,18 +66,17 @@ class Communicator:
         # (clientConnection, messageDict)
         self.inQueue = Queue.Queue()
 
-        self.expectedReconnections = 0
-        self.listeningForReconnections = False
-
         self.paused = False
         self.pauseLock = thread.allocate_lock()
 
         self.timer = None
 
-    def connectToClients(self, count):
+    def acceptConnections(self):
         """
-        Accept count client connections, placing each connection message in the
-        incoming message queue as it arrives.  Non-blocking.
+        Start accepting client connections, placing each connection message in
+        the incoming message queue as it arrives.  Non-blocking.  Connection
+        messages have type 'connect' and the associated ClientConnection has
+        id=None.
         """
 
         def run():
@@ -85,11 +84,11 @@ class Communicator:
             # to prevent socket.error: (98, 'Address already in use'):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.bind(('', self.port))
-            for i in xrange(0, count):
+            while True:
                 sock.listen(1)
                 csock, addr = sock.accept()
                 csock.settimeout(network.timeout)
-                clientConn = ClientConnection(i, csock, addr)
+                clientConn = ClientConnection(None, csock, addr)
                 self.postEvent(clientConn, {'type': 'connect'})
                     # Need to post 'connect' message before starting the
                     # listenerThread; otherwise we may get the 'login' message
@@ -104,7 +103,6 @@ class Communicator:
                 clientConn.listenerThread = ListenerThread(self, clientConn)
                 clientConn.listenerThread.Start()
                 clientConn.sync()
-            self.postEvent(None, {'type': 'all connected'})
 
         thread.start_new_thread(run, ())
 
@@ -166,43 +164,6 @@ class Communicator:
         self.paused = False
         self.pauseLock.release()
 
-    def reconnectToClients(self, count):
-        """ Listen for reconnections from count clients. """
-
-        self.expectedReconnections += count
-
-        # If the reconnection listener thread isn't already running, run it.
-        if not self.listeningForReconnections:
-            thread.start_new_thread(self.listenForReconnections, ())
-        # FIXME: race condition here?
-
-    def listenForReconnections(self):
-        """ Called only by reconnectToClients() """
-
-        self.listeningForReconnections = True
-
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # to prevent socket.error: (98, 'Address already in use'):
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind(('', self.port))
-
-        while self.expectedReconnections > 0:
-            sock.listen(1)
-            csock, addr = sock.accept()
-            # Create a new clientConn object for this client, setting id to -1
-            # because we don't know it yet.  Server must communicate with client
-            # and determine this.
-            clientConn = ClientConnection(-1, csock, addr)
-            clientConn.senderThread = network.SenderThread(csock)
-            clientConn.senderThread.Start()
-            self.postEvent(clientConn, {'type': 'reconnect'})
-            clientConn.listenerThread = ListenerThread(self, clientConn)
-            clientConn.listenerThread.Start()
-            clientConn.sync()
-            self.expectedReconnections -= 1
-
-        self.listeningForReconnections = False
-
     def startTimer(self, interval):
         """ Start a timer that will run for <interval> seconds and then put a
         timer expiration message on the queue (which will be picked up by recv()
@@ -259,6 +220,19 @@ class ClientConnection:
         self.syncQueue = Queue.Queue() # Client's sync replies get put here
         self.clockOffset = 0
 
+    def close(self):
+        """ Shut down the listenerThread, the senderThread, and close the
+        socket. """
+        self.listenerThread.Stop()
+        self.senderThread.Stop()
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+        except socket.error:
+            print 'ClientConnection.close(): caught exception on '\
+                    + 'sock.shutdown() (OK)'
+
+        self.sock.close()
+
     def sync(self):
         """ Synchronize with the client (that is, learn the difference between
         the server's clock and the client's clock). """
@@ -276,7 +250,8 @@ class ClientConnection:
                 rtt = new_rtt
                 self.clockOffset = reply['ct'] + rtt / 2 - st2
 
-        print 'synchronized with client', self.id, ': clockOffset =',\
+        clientID = self.id+1 if self.id != None else "(no ID)"
+        print 'synchronized with client', clientID, ': clockOffset =',\
             self.clockOffset
 
 class ListenerThread:
@@ -310,6 +285,8 @@ class ListenerThread:
         thread.start_new_thread(self.Run, ())
 
     def Stop(self):
+        """ Stop the thread (causes the Run function to terminate after the
+        current call to network.recvmessage() returns). """
         self.keepListening = False
 
     def Run(self):

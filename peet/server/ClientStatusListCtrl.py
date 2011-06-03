@@ -18,9 +18,13 @@ import sys
 from decimal import Decimal
 import wx
 from wx.lib.mixins.listctrl import ColumnSorterMixin
+import wx.lib.newevent
 
 from ClientData import ClientData
 import images
+
+# For sending right-click menu events to the server
+ClientListEvent, EVT_CLIENT_LIST = wx.lib.newevent.NewEvent()
 
 class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
     def __init__(self, parent, id, pos=wx.DefaultPosition, size=wx.DefaultSize,
@@ -144,12 +148,16 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
         # client is of type ClientData
 
         roundedEarnings = client.getRoundedEarnings()
+        if client.connection != None:
+            address = client.connection.address[0]
+        else:
+            address = ''
 
         # Update the itemDataMap for ColumnSorterMixin
         id = client.id
         self.itemDataMap[id][0] = client.id+1
-        self.itemDataMap[id][1] = client.connection.address[0]
-        self.itemDataMap[id][2] = client.name
+        self.itemDataMap[id][1] = address
+        self.itemDataMap[id][2] = client.name if client.name != None else ''
         self.itemDataMap[id][3] = client.status
         self.itemDataMap[id][4] = client.earnings
         self.itemDataMap[id][5] = roundedEarnings
@@ -168,7 +176,11 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
 
     def updateClients(self, clients):
         self.columnsNeedResize = False
-        for client in clients:
+        for id, client in enumerate(clients):
+            if client == None:
+                # Create a dummy client
+                client = ClientData(id, None, 'Waiting for connection',
+                        Decimal('0.00'), None)
             self.updateClient(client)
         self.columnsNeedResize = True
         self.resizeColumns()
@@ -250,10 +262,15 @@ class ClientStatusListCtrl (wx.ListCtrl, ColumnSorterMixin):
         if self.idClicked != -1:
 
             menu = wx.Menu()
-            # Popup the menu.  If an item is selected then its handler
-            # will be called before PopupMenu returns.
+            menuItem = menu.Append(wx.NewId(), "Drop client")
+            self.Bind(wx.EVT_MENU, self.onDropClicked, menuItem)
             self.PopupMenu(menu)
             menu.Destroy()
+
+    def onDropClicked(self, event):
+        print 'onDropClicked'
+        wx.PostEvent(self, ClientListEvent(command='drop',
+            id=self.idClicked))
 
     # FIXME: I don't think this is used anymore
     def sortFunc(self, item1, item2):

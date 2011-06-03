@@ -34,6 +34,7 @@ class ClientData:
         @type connection: peet.server.servernet.ClientConnection
         """
         self.id = id
+        self.loginTimer = None # Runs when waiting for login message
         self.name = name
         self.status = status
         self.earnings = earnings

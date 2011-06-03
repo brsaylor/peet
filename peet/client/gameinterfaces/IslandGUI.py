@@ -70,7 +70,7 @@ class IslandGUI(GameGUI.GameGUI):
         topSizer = wx.BoxSizer(wx.HORIZONTAL)
         topSizer.AddF(wx.StaticText(self.panel, wx.ID_STATIC, self.name), f)
         topSizer.AddF(wx.StaticText(self.panel, wx.ID_STATIC,\
-               'ID: %d' % self.id + 1), f)
+               'ID: %d' % (self.id + 1)), f)
         self.yourColorLabel = wx.StaticText(self.panel, wx.ID_STATIC, '-')
         topSizer.AddF(self.yourColorLabel, f)
         self.matchRoundLabel = wx.StaticText(self.panel, wx.ID_STATIC, '-')

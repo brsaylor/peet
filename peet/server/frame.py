@@ -27,6 +27,7 @@ import csv
 from decimal import Decimal
 import re
 import json
+import threading
 import wx
 import wx.lib.newevent
 
@@ -35,11 +36,14 @@ from peet.server.parameditors import TreeEditor
 from peet.server import servernet
 import peet.server.gamecontrollers
 from peet.server.ClientData import ClientData
-from peet.server.ClientStatusListCtrl import ClientStatusListCtrl
+from peet.server import ClientStatusListCtrl
 from peet.server import survey
 
 # Custom wx events for network events (client connects, messages, etc.)
 NetworkEvent, EVT_NETWORK = wx.lib.newevent.NewEvent()
+
+# Constants
+loginTimeout = 5
 
 class Frame(wx.Frame):
     def __init__(self,parent,id,title):
@@ -52,7 +56,6 @@ class Frame(wx.Frame):
         self.paramsReadOnly = False
         self.outputDir = None
         self.clients = []
-        self.clientsLoggedIn = 0
         self.roundNum = 0
 
         self.chatEnabled = False
@@ -168,10 +171,13 @@ class Frame(wx.Frame):
         self.roundLabel = wx.StaticText(self.panel, wx.ID_STATIC,
                                             "Round -")
         bsizer.Add(self.roundLabel)
-        self.listCtrl = ClientStatusListCtrl(self.panel, wx.ID_ANY,
-                                             style=wx.LC_REPORT)
+        self.listCtrl = ClientStatusListCtrl.ClientStatusListCtrl(self.panel,
+                wx.ID_ANY, style=wx.LC_REPORT)
         bsizer.Add(self.listCtrl, 1, wx.EXPAND)
         mainSizer.Add(bsizer, 1, flag=wx.EXPAND|wx.ALL, border=borderSize)
+
+        self.listCtrl.Bind(ClientStatusListCtrl.EVT_CLIENT_LIST,
+                self.onClientListEvent)
 
         # Message box
         box = wx.StaticBox(self.panel, wx.ID_STATIC, "Messages")
@@ -250,47 +256,143 @@ class Frame(wx.Frame):
         event = NetworkEvent(clientConn=clientConn, message=message)
         wx.PostEvent(self, event)
 
+    def onClientListEvent(self, event):
+        print 'onClientListEvent: command = %s, id = %d' % (event.command,
+                event.id)
+
+        if event.command == 'drop':
+            if self.clients[event.id] != None:
+                if self.clients[event.id].connection != None:
+                    self.clients[event.id].connection.close()
+                if not self.gameController.running:
+                    # If the game has not been started yet, delete the client.
+                    self.clients[event.id] = None
+                self.listCtrl.updateClients(self.clients)
+            else:
+                # No client with the given ID; ignore.
+                pass
+
+                    
+
     def onNetworkEvent(self, event):
         #print "onNetworkEvent"
         clientConn = event.clientConn
         message = event.message
-        if clientConn != None and message['type'] != 'ping':
-            print 'client ', clientConn.id+1, ': ', message
-        #if clientConn != None:
-        #    self.postMessage("Received message from client " +
-        #            str(clientConn.id) + ": " + str(message))
+        if clientConn != None and message.get('type') != 'ping':
+            clientId = clientConn.id+1 if clientConn.id != None else "(no ID)"
+            print 'client ', clientId, ': ', message
+        t = message.get('type')
 
-        if message['type'] == 'connect':
-            self.postMessage("Client " + str(clientConn.id+1) + " connected")
-            client = ClientData(clientConn.id, '', 'Connected', Decimal('0.00'),
-                    clientConn)
-            client.setRounding(self.rounding)
-            self.clients[clientConn.id] = client
-            self.listCtrl.updateClient(client)
+        if t == 'connect':
 
-        elif message['type'] == 'all connected':
-            self.postMessage("All clients connected.")
-            # But not necessarily logged in...
+            if not self.gameController.running:
+                # The game has not been started yet, so this is an initial
+                # connection.
+                if self.clients.count(None) == 0:
+                    # No open slots - close the connection.
+                    m = {'type': 'error',
+                            'errorString': "There are no more available slots."}
+                    self.communicator.send(clientConn, m)
+                    # Make sure the error message is sent before disconnecting
+                    # FIXME: must be a better way.
+                    time.sleep(1)
+                    clientConn.close()
+                else:
+                    # Create the ClientData and assign it to the first open
+                    # slot.
+                    clientConn.id = self.clients.index(None)
+                    client = ClientData(clientConn.id, None, 'Connected',\
+                            Decimal('0.00'), clientConn)
+                    client.setRounding(self.rounding)
+                    self.clients[clientConn.id] = client
+                    self.listCtrl.updateClient(client)
+                    self.postMessage("Client " + str(clientConn.id+1)\
+                            + " connected")
 
-        elif message['type'] == 'login':
+                    # Send the login prompt
+                    self.communicator.send(clientConn, {'type': 'loginPrompt'})
 
-            # Ignore login message if all clients already logged in
-            # (it's probably from a disconnected client that clicked 'Log In'
-            # by mistake instead of Reconnect)
-            if self.clientsLoggedIn < len(self.clients):
+                    # Set a timer that will run while waiting for the expected
+                    # login message.
+                    client.loginTimer = threading.Timer(loginTimeout,
+                            self.onLoginTimeout, [client])
+                    client.loginTimer.start()
+            else:
+                # The game is in progress, so treat this as a reconnect.
+                clientsDisconnected = False
+                for c in self.clients:
+                    if c.connection == None:
+                        clientsDisconnected = True
+                if not clientsDisconnected:
+                    # No disconnected clients - close the connection.
+                    m = {'type': 'error',
+                            'errorString': 'There are no disconnected clients.'}
+                    self.communicator.send(clientConn, m)
+                    # Make sure the error message is sent before disconnecting
+                    # FIXME: must be a better way.
+                    time.sleep(1)
+                    clientConn.close()
+                else:
+                    # Send the relogin prompt
+                    self.promptRelogin(clientConn)
 
+        elif t == 'login':
+
+            name = message.get('name')
+
+            # Check for various error conditions.
+            error = False
+            if self.gameController.running:
+                error = True
+                errorString = "The game is already in progress.  "\
+                        + "Please click the Reconnect button."
+            elif type(name) not in (str, unicode) or len(name) == 0:
+                error = True
+                errorString = "Please enter your name and try again."
+            elif name in map(
+                    lambda(c): c.name if c != None else None,
+                    self.clients):
+                error = True
+                errorString = "That name is already taken.  "\
+                        + "Please enter a different one and try again."
+
+            if error:
+                # If there's an error with the login, send an error message to
+                # the client and drop the client.
+
+                m = {'type': 'error', 'errorString': errorString}
+                self.communicator.send(clientConn, m)
+
+                # Make sure the error message is sent before disconnecting
+                # FIXME: must be a better way.
+                time.sleep(1)
+                clientConn.close()
+
+                # If the game has not started yet, delete the client entirely.
+                # (Otherwise, the connection has no id and is not associated
+                # with a client - the subject probably clicked "connect" instead
+                # of "reconnect".)
+                if not self.gameController.running:
+                    client = self.clients[clientConn.id]
+                    client.loginTimer.cancel()
+                    client.loginTimer = None
+                    self.clients[client.id] = None
+
+            else:
+                # Everything's OK; accept the login.
                 client = self.clients[clientConn.id]
-                client.name = message['name']
+                client.loginTimer.cancel()
+                client.loginTimer = None
+                client.name = message.get('name')
                 self.listCtrl.updateClient(client)
-                self.clientsLoggedIn += 1
-                if self.clientsLoggedIn == len(self.clients):
+                if self.allClientsLoggedIn():
                     print 'All clients logged in.'
                     self.postMessage("All clients logged in.")
                     self.startButton.Enable(True)
                     if self.autostart:
                         self.onStartClicked(None)
 
-        elif message['type'] == 'ready':
+        elif t == 'ready':
             # Message from client that GUI has been created and is ready for the
             # game to begin (or resume, in the case of a reconnected client)
 
@@ -312,7 +414,7 @@ class Frame(wx.Frame):
                 if not clientsStillDisconnected:
                     self.pauseButton.Enable()
 
-        elif message['type'] == 'chat':
+        elif t == 'chat':
             if self.chatEnabled:
                 self.forwardChatMessage(clientConn, message)
 
@@ -327,41 +429,75 @@ class Frame(wx.Frame):
                         message['message']]
                 self.chatHistory.append(row)
 
-        elif message['type'] == 'disconnect':
-            # Pause and don't allow unpausing until client has reconnected
-            self.pauseButton.Enable(False)
-            self.communicator.pause()
-            self.pauseClients()
-            self.pauseButton.SetLabel("Unpause")
-            client = self.clients[clientConn.id]
-            client.status = 'Disconnected'
-            self.listCtrl.updateClient(client)
-            self.communicator.reconnectToClients(1)
+        elif t == 'disconnect':
 
-            errorstring = "A client has disconnected."
-            dlg = wx.MessageDialog(self, errorstring,
-                    'Client Disconnected', wx.OK | wx.ICON_ERROR)
-            dlg.ShowModal()
-            dlg.Destroy()
+            if not self.gameController.running:
+                # Client has disconnected before game has started, so delete the
+                # client
+                if clientConn.id != None:
+                    self.clients[clientConn.id] = None
+                clientConn.close()
+                self.listCtrl.updateClients(self.clients)
 
-        elif message['type'] == 'reconnect':
-            self.promptRelogin(clientConn)
+            else:
+                # Game is in progress
+
+                # Pause and don't allow unpausing until client has reconnected
+                self.pauseButton.Enable(False)
+                self.communicator.pause()
+                self.pauseClients()
+                self.pauseButton.SetLabel("Unpause")
+
+                clientConn.close()
+
+                if clientConn.id == None:
+                    # The disconnected client has no id, which probably means it
+                    # disconnected before sending the relogin message.
+                    print "A client with no ID has disconnected."
+
+                else:
+                    client = self.clients[clientConn.id]
+                    client.status = 'Disconnected'
+                    client.connection = None
+                    self.listCtrl.updateClient(client)
+                    errorstring = "A client has disconnected."
+                    dlg = wx.MessageDialog(self, errorstring,
+                            'Client Disconnected', wx.OK | wx.ICON_ERROR)
+                    dlg.ShowModal()
+                    dlg.Destroy()
             
-        elif message['type'] == 'relogin':
+        elif t == 'relogin':
             # Reconnecting client's response to 'whoareyou'.
             # Check for valid selection
-            id = message['id']
-            if self.clients[id].status == 'Disconnected':
-                # OK, reconnect client with selected ID
-                clientConn.id = id
-                client = self.clients[id]
-                client.connection = clientConn
-                client.status = 'Connected'
-                self.listCtrl.updateClient(client)
-                self.gameController.reinitClient(client)
+            if not self.gameController.running:
+                # This should never happen - print error message and disconnect
+                # client
+                self.postMessage("Error: unexpected 'relogin' message received")
+                clientConn.close()
             else:
-                # Selected client is not disconnected, so as 'whoareyou' again.
-                self.promptRelogin(clientConn)
+                clientID = message.get('id')
+                if type(clientID) == int\
+                        and clientID >= 0 and clientID < len(self.clients)\
+                        and self.clients[clientID].status == 'Disconnected':
+                    # OK, reconnect client with selected ID
+                    clientConn.id = clientID
+                    client = self.clients[clientID]
+                    client.connection = clientConn
+                    client.status = 'Connected'
+                    self.listCtrl.updateClient(client)
+                    self.gameController.reinitClient(client)
+                else:
+                    # Given ID is not the valid ID of a disconnected client,
+                    # so ask 'whoareyou' again.
+                    self.promptRelogin(clientConn)
+
+    def allClientsLoggedIn(self):
+        """ @return True if all clients have logged in, else False. """
+        for c in self.clients:
+            if c == None or c.name == None:
+                return False
+        return True
+
 
     def enableChat(self, enable=True, chatFilter=None):
         """ Enable forwarding of chat messages.  The chatFilter parameter sets
@@ -390,6 +526,22 @@ class Frame(wx.Frame):
                     self.chatFilter(client, c)):
                 self.communicator.send(c.connection, message)
 
+    def onLoginTimeout(self, client):
+        """ Called by client.loginTimer when it times out waiting for the client
+        to send an expected login message after connecting.  This might happen
+        if the subject clicks 'reconnect' before the game starts. """
+        print 'onLoginTimeout'
+        client.loginTimer = None
+        m = {'type': 'error',
+                'errorString': 'Please enter your name and click "Log In".'}
+        self.communicator.send(client.connection, m)
+        # Make sure the error message is sent before disconnecting
+        # FIXME: must be a better way.
+        time.sleep(1)
+        client.connection.close()
+        self.clients[client.id] = None
+        self.listCtrl.updateClients(self.clients)
+
     def promptRelogin(self, clientConn):
         # Called when a disconnected client reconnects.
         # Send the client a list of disconnected clients in the form of a
@@ -399,7 +551,7 @@ class Frame(wx.Frame):
         for client in self.clients:
             if client.status == 'Disconnected':
                 disconnectedClients.append((client.id, client.name))
-        self.communicator.send(clientConn, {'type': 'whoareyou',
+        self.communicator.send(clientConn, {'type': 'reloginPrompt',
             'disconnectedClients': disconnectedClients})
 
     def setControlClass(self, controlClass):
@@ -510,10 +662,10 @@ class Frame(wx.Frame):
         self.paramsReadOnly = True
         self.outputDirButton.Enable(False)
 
-        # send out the message & wait for responses
+        # Set up the client slots and start accepting connections.
         self.clients = [None for i in range(self.numPlayers)]
         self.listCtrl.makeRows(self.numPlayers)
-        self.communicator.connectToClients(self.numPlayers)
+        self.communicator.acceptConnections()
 
     def onMsgClicked(self, event):
         for c in self.clients:
@@ -755,7 +907,8 @@ class Frame(wx.Frame):
         """ Send a pause message to the clients.  It's up to the particular
         GameGUI what to do with the message. """
         for c in self.clients:
-            self.communicator.send(c.connection, {'type': 'pause'})
+            if c != None and c.connection != None:
+                self.communicator.send(c.connection, {'type': 'pause'})
 
     def updateClientStatus(self, client):
         """ The game controller can call this after a client's status changes to

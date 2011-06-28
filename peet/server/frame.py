@@ -442,12 +442,6 @@ class Frame(wx.Frame):
             else:
                 # Game is in progress
 
-                # Pause and don't allow unpausing until client has reconnected
-                self.pauseButton.Enable(False)
-                self.communicator.pause()
-                self.pauseClients()
-                self.pauseButton.SetLabel("Unpause")
-
                 clientConn.close()
 
                 if clientConn.id == None:
@@ -456,6 +450,13 @@ class Frame(wx.Frame):
                     print "A client with no ID has disconnected."
 
                 else:
+                    # Pause and don't allow unpausing until client has
+                    # reconnected
+                    self.pauseButton.Enable(False)
+                    self.communicator.pause()
+                    self.pauseClients()
+                    self.pauseButton.SetLabel("Unpause")
+
                     client = self.clients[clientConn.id]
                     client.status = 'Disconnected'
                     client.connection = None

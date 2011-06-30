@@ -53,8 +53,8 @@ ProductionMoveEvent, EVT_PRODUCTION_MOVE = newevent.NewEvent()
 #CloseDialogEvent, EVT_CLOSE_DIALOG = newevent.NewCommandEvent()
 
 class IslandGUI(GameGUI.GameGUI):
-    def __init__(self, communicator, initParams):
-        GameGUI.GameGUI.__init__(self, communicator, initParams)
+    def __init__(self, parent, communicator, initParams):
+        GameGUI.GameGUI.__init__(self, parent, communicator, initParams)
 
         self.panel.SetBackgroundColour('white')
         self.panel.SetFont(font)

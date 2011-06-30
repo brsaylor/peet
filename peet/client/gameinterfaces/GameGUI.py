@@ -23,6 +23,7 @@ from peet.client import clientnet
 from peet.shared.constants import roundingOptions
 
 NetworkEvent, EVT_NETWORK = wx.lib.newevent.NewEvent()
+DestroyEvent, EVT_DESTROY = wx.lib.newevent.NewEvent()
 
 class GameGUI(wx.Frame):
 
@@ -30,10 +31,10 @@ class GameGUI(wx.Frame):
     Important: when adding children to this, be sure to make them children of
     self.panel, not self. """
 
-    def __init__(self, communicator, initParams):
+    def __init__(self, parent, communicator, initParams):
         title = initParams['name'] + ' (ID ' + str(initParams['id'] + 1) + ')'
         style = wx.CAPTION | wx.CLIP_CHILDREN # | wx.RESIZE_BORDER
-        wx.Frame.__init__(self, None, wx.ID_ANY, title, style=style)
+        wx.Frame.__init__(self, parent, wx.ID_ANY, title, style=style)
 
         self.communicator = communicator
         self.initParams = initParams
@@ -94,11 +95,16 @@ class GameGUI(wx.Frame):
         mes = event.message
         if mes['type'] == 'chat':
             self.chatBox.AppendText(self.makeChatString(mes, mes['id']))
+
         elif mes['type'] == 'disconnect':
             print 'GameGUI received disconnect message'
+
+            # Send the destroy event to the parent (the login frame), then
+            # destroy this frame.
+            wx.PostEvent(self.GetParent(), DestroyEvent())
             self.Destroy()
-            # Not sure why Destroy() doesn't end the process
-            exit(0)
+            return
+
         elif mes['type'] == 'endOfExperiment':
             self.showEndOfExperimentMes(mes)
 

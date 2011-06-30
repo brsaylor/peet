@@ -23,8 +23,8 @@ class TestGUI(GameGUI.GameGUI):
 
     """Test game GUI."""
 
-    def __init__(self, communicator, initParams):
-        GameGUI.GameGUI.__init__(self, communicator, initParams)
+    def __init__(self, parent, communicator, initParams):
+        GameGUI.GameGUI.__init__(self, parent, communicator, initParams)
         #print "Hi, I'm TestGUI!  initParams = "
         #print self.initParams
 

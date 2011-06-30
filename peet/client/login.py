@@ -185,7 +185,22 @@ class LoginWindow(wx.Frame):
         moduleName = 'peet.client.gameinterfaces.' + className
         exec 'import ' + moduleName
         GUIclass = eval(moduleName + '.' + className)
-        self.gameGUI = GUIclass(self.communicator, initParams)
+        self.gameGUI = GUIclass(self, self.communicator, initParams)
+        self.Bind(GameGUI.EVT_DESTROY, self.onGUIDestroyed)
         self.Unbind(GameGUI.EVT_NETWORK)
         self.gameGUI.sendReadyMessage()
-        self.Destroy()
+        self.Show(False)
+
+    def onGUIDestroyed(self, event):
+        """ The GameGUI posts this event before destroying iteself, probably due
+        to disconnecting from the server.  Display the login window again. """
+        self.Bind(GameGUI.EVT_NETWORK, self.onNetworkEvent)
+        self.communicator.postEvent = self.postNetworkEvent
+        self.reset()
+        self.Show()
+
+        text = "The network connection has been lost."
+        dlg = wx.MessageDialog(self, text,
+                'Disconnected', wx.OK | wx.ICON_ERROR)
+        dlg.ShowModal()
+        dlg.Destroy()

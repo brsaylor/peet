@@ -21,8 +21,8 @@ from peet.client import clientnet
 import GameGUI
 
 class NetworkTesterGUI(GameGUI.GameGUI):
-    def __init__(self, communicator, initParams):
-        GameGUI.GameGUI.__init__(self, communicator, initParams)
+    def __init__(self, parent, communicator, initParams):
+        GameGUI.GameGUI.__init__(self, parent, communicator, initParams)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(sizer)

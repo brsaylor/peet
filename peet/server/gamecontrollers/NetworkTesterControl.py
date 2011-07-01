@@ -17,6 +17,7 @@
 import random
 import string
 import sys
+import time
 
 from peet.server import servernet
 import GameControl
@@ -78,6 +79,9 @@ class NetworkTesterControl(GameControl.GameControl):
             mes = self.makeRandomMessage()
             self.communicator.send(conn, mes)
             self.sentMessages[conn.id] = mes
+
+            # yield to prevent locking up the GUI
+            time.sleep(0)
 
         # clear the sent messages list
         self.sentMessages = [None] * len(self.clients)

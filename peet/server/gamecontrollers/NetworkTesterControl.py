@@ -50,6 +50,8 @@ class NetworkTesterControl(GameControl.GameControl):
 
     def runRound(self):
 
+        sleepTime = self.params['sleepTime']
+
         # send initial batch of messages
         for client in self.clients:
             m = self.makeRandomMessage()
@@ -81,7 +83,7 @@ class NetworkTesterControl(GameControl.GameControl):
             self.sentMessages[conn.id] = mes
 
             # yield to prevent locking up the GUI
-            time.sleep(0)
+            time.sleep(sleepTime)
 
         # clear the sent messages list
         self.sentMessages = [None] * len(self.clients)

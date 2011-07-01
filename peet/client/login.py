@@ -192,15 +192,9 @@ class LoginWindow(wx.Frame):
         self.Show(False)
 
     def onGUIDestroyed(self, event):
-        """ The GameGUI posts this event before destroying iteself, probably due
+        """ The GameGUI posts this event after destroying itself, probably due
         to disconnecting from the server.  Display the login window again. """
         self.Bind(GameGUI.EVT_NETWORK, self.onNetworkEvent)
         self.communicator.postEvent = self.postNetworkEvent
         self.reset()
         self.Show()
-
-        text = "The network connection has been lost."
-        dlg = wx.MessageDialog(self, text,
-                'Disconnected', wx.OK | wx.ICON_ERROR)
-        dlg.ShowModal()
-        dlg.Destroy()

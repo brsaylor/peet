@@ -99,10 +99,17 @@ class GameGUI(wx.Frame):
         elif mes['type'] == 'disconnect':
             print 'GameGUI received disconnect message'
 
-            # Send the destroy event to the parent (the login frame), then
-            # destroy this frame.
-            wx.PostEvent(self.GetParent(), DestroyEvent())
+            text = "The network connection has been lost."
+            dlg = wx.MessageDialog(self, text,
+                    'Disconnected', wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            dlg.Destroy()
+
+            # Destroy this frame, then send the destroy event to the parent (the
+            # login frame).
+            parent = self.GetParent()
             self.Destroy()
+            wx.PostEvent(parent, DestroyEvent())
             return
 
         elif mes['type'] == 'endOfExperiment':

@@ -1,6 +1,11 @@
 {
     "type": "object",
     "properties": {
-        "numPlayers": { "type": "integer" }
+        "numPlayers": { "type": "integer" },
+        "sleepTime": {
+            "type": "number",
+            "description": "Amount of time in seconds to sleep between messages",
+            "default": 1
+        }
     }
 }

@@ -1,3 +1,6 @@
+2010-10-12
+	* Started git repository - use git log to see changes from this point.
+
 2009-04-20
 	* New parameter "filter" in server.enableChat()
 
